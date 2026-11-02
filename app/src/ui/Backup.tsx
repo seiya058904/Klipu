@@ -56,7 +56,7 @@ export default function Backup() {
     try {
       const brought = await invoke<Brought>("load_backup", { path: chosen, at: Date.now() });
       const notes = [
-        brought.already > 0 ? fill("inAlready", items(brought.already)) : null,
+        brought.added > 0 && brought.already > 0 ? fill("inAlready", items(brought.already)) : null,
         brought.refused > 0 ? fill("inRefused", items(brought.refused)) : null,
         brought.fromElsewhere ? t("inElsewhere") : null,
       ].filter(Boolean);

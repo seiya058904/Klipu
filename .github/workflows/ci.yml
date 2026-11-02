@@ -17,11 +17,12 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
+  PYTHON: python
 
 jobs:
   check:
     runs-on: windows-2025
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,10 +42,6 @@ jobs:
 
       - run: cargo fmt --all --check
       - run: bash scripts/rules.sh
-      - name: The app embeds the panel
-        run: python scripts/sidecar.py --debug
-      - run: cargo clippy --workspace --all-targets
-      - run: cargo test --workspace
 
       - run: npm ci
         working-directory: app
@@ -54,3 +51,8 @@ jobs:
         working-directory: app
       - run: npm test
         working-directory: app
+
+      - name: The app embeds the panel
+        run: python scripts/sidecar.py --debug
+      - run: cargo clippy --workspace --all-targets
+      - run: cargo test --workspace

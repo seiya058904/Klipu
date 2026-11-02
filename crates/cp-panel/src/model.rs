@@ -311,7 +311,7 @@ impl Rows {
         {
             Ok(page) => page,
             Err(why) => {
-                crate::note::note(&format!("la lista no se pudo leer: {why}"));
+                crate::note::note(&format!("the list could not be read: {why}"));
                 self.exhausted.set(true);
                 return 0;
             }
@@ -328,7 +328,7 @@ impl Rows {
             let ids: Vec<i64> = page.rows.iter().map(|one| one.id).collect();
             match self.store.meta_for(&ids, keys) {
                 Ok(found) => self.meta.borrow_mut().extend(found),
-                Err(why) => crate::note::note(&format!("los metadatos no se pudieron leer: {why}")),
+                Err(why) => crate::note::note(&format!("the metadata could not be read: {why}")),
             }
         }
         self.rows.borrow_mut().extend(page.rows);

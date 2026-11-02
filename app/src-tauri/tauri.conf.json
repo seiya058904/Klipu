@@ -27,7 +27,7 @@
       "icons/icon.ico"
     ],
     "publisher": "Klipu contributors",
-    "copyright": "Copyright © 2026 Klipu contributors. Based on CoPanda, © 2026 Mario Hidalgo G.",
+    "copyright": "© 2026 Klipu contributors, based on CoPanda",
     "category": "Productivity",
     "shortDescription": "A focused clipboard manager for Windows. No account, no telemetry, no network",
     "longDescription": "Klipu keeps what you copy within reach of a shortcut: text, images, files and links, searchable in milliseconds and stored only on your own machine.",
@@ -41,7 +41,8 @@
           "English"
         ],
         "displayLanguageSelector": false,
-        "template": "installer.nsi"
+        "template": "installer.nsi",
+        "installerIcon": "icons/icon.ico"
       }
     },
     "externalBin": [

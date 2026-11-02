@@ -37,7 +37,7 @@ pub fn run(app: &App) {
                 _ => {}
             });
         if let Err(why) = hooked {
-            eprintln!("sin notificador de render: {why:?}");
+            eprintln!("no rendering notifier: {why:?}");
         }
     }
     let searches: Samples = Rc::new(RefCell::new(Vec::new()));

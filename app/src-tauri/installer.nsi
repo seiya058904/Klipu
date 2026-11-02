@@ -765,7 +765,9 @@ Function un.onInit
     !insertmacro MULTIUSER_UNINIT
   !endif
 
-  !insertmacro MUI_UNGETLANGUAGE
+  !if "${DISPLAYLANGUAGESELECTOR}" == "true"
+    !insertmacro MUI_UNGETLANGUAGE
+  !endif
 
   ${GetOptions} $CMDLINE "/P" $PassiveMode
   ${IfNot} ${Errors}
@@ -896,7 +898,6 @@ Section Uninstall
     DeleteRegKey /ifempty HKCU "${MANUKEY}"
 
     SetShellVarContext current
-    ; The 2.x keeps its history in this same folder, and it is not ours to delete.
     Delete "$LOCALAPPDATA\${HOMENAME}\history.db"
     Delete "$LOCALAPPDATA\${HOMENAME}\history.db-wal"
     Delete "$LOCALAPPDATA\${HOMENAME}\history.db-shm"

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+﻿import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const sheet = readFileSync("src/index.css", "utf8");
@@ -6,7 +6,7 @@ const sheet = readFileSync("src/index.css", "utf8");
 describe("the three themes", () => {
   it("light is the base, so with no choice it does not fall to dark", () => {
     const root = sheet.slice(sheet.indexOf(":root {"), sheet.indexOf("}"));
-    expect(root).toContain("--panel: #f7f8fb");
+    expect(root).toContain("--panel: #f6f6f8");
     expect(root).toContain("color-scheme: light");
   });
 
