@@ -1,8 +1,8 @@
 use tauri::window::Color;
 use tauri::{AppHandle, Manager, Runtime, Theme, WebviewWindowBuilder};
 
-const LIGHT: Color = Color(0xF7, 0xF8, 0xFB, 0xFF);
-const DARK: Color = Color(0x1A, 0x1D, 0x2B, 0xFF);
+const LIGHT: Color = Color(0xF6, 0xF6, 0xF8, 0xFF);
+const DARK: Color = Color(0x16, 0x17, 0x1B, 0xFF);
 const WINDOWS: [&str; 3] = ["main", "welcome", "ready"];
 
 fn chosen() -> Option<Theme> {

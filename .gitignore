@@ -3,9 +3,6 @@
 .DS_Store
 Thumbs.db
 *.pdb
-/mutants.out
-/mutants.out.old
-/mutants.json
 __pycache__/
 .signing/
 *.pfx
@@ -17,8 +14,6 @@ __pycache__/
 node_modules/
 app/dist/
 app/coverage/
-app/reports/
-app/.stryker-tmp/
 app/src-tauri/target/
 app/src-tauri/binaries/
 app/src-tauri/gen/

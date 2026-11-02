@@ -207,7 +207,8 @@ function Preview({ kept, choices }: { kept: Kept; choices: Choices | null }) {
             <span>· Terminal</span>
             <em>{t("previewAge")}</em>
           </div>
-          <code>{lines > 1 ? 'git commit -m "listo"\ngit push' : 'git commit -m "listo"'}</code>
+          <code>{lines > 1 ? 'git commit -m "release"
+git push' : 'git commit -m "release"'}</code>
         </div>
       </div>
     </figure>

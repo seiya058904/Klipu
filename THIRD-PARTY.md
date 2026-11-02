@@ -1,23 +1,22 @@
 # Third-party notices
 
-CoPanda is GPL-3.0-only. What follows was copied into CoPanda's own source
+Klipu is GPL-3.0-only. What follows was copied into Klipu's own source
 and carries its own licence, which allows that.
 
-CoPanda also bundles other people's work rather than copying it. The parts
+Klipu also bundles other people's work rather than copying it. The parts
 that do the heavy lifting are [Slint](https://slint.dev) with
 [Skia](https://skia.org) for the panel, [SQLite](https://sqlite.org) through
 [rusqlite](https://github.com/rusqlite/rusqlite) for the history,
 [image](https://github.com/image-rs/image) for the thumbnails,
 [BLAKE3](https://github.com/BLAKE3-team/BLAKE3) and
 [xxHash](https://github.com/Cyan4973/xxHash) for the fingerprints, and the
-[windows](https://github.com/microsoft/windows-rs) and
-[objc2](https://github.com/madsmtm/objc2) crates for the two platforms. Each
+[windows](https://github.com/microsoft/windows-rs) crates for the system. Each
 one is permissively licensed, and
 [THIRD-PARTY-BUNDLED.md](THIRD-PARTY-BUNDLED.md) names every last one of them
 with its version and its licence, and
 [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) reproduces the licence texts
 the crates carry, each written once with the crates that carry it. Both files
-are written by `npm run notices` and CI refuses a change that leaves them behind
+are written by `node scripts/third-party.mjs` and CI refuses a change that leaves them behind
 the lockfiles. The application carries both inside its own binary, so every copy
 shows them under **About → Third-party notices** and **About → Licence texts**,
 wherever it was installed from and with no network.

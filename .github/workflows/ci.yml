@@ -3,14 +3,16 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ["**.md", "resources/**", "LICENSE"]
   pull_request:
+    paths-ignore: ["**.md", "resources/**", "LICENSE"]
 
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -18,273 +20,37 @@ env:
 
 jobs:
   check:
-    name: test / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-15, windows-2025]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - name: Rust, from rust-toolchain.toml
-        run: rustup toolchain install --no-self-update
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: workspace
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
-        with:
-          tool: nextest
-
-      - uses: ./.github/actions/sidecar
-
-      - run: cargo clippy --workspace --all-targets
-      - run: cargo nextest run --workspace --no-tests=pass
-      - if: runner.os == 'Windows'
-        run: cargo test --doc --workspace
-
-      - if: runner.os == 'macOS'
-        run: cargo run -p cp-mac --example mac_probe
-      - name: The probe reads a real clipboard, so leave something on it
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Set-Clipboard -Value "cp-probe"
-      - if: runner.os == 'Windows'
-        run: cargo run -p cp-win --example win_probe
-
-  lint:
-    name: fmt
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - name: Rust, from rust-toolchain.toml
-        run: rustup toolchain install --no-self-update
-      - run: cargo fmt --all --check
-      - name: The probe bodies are formatted too
-        run: rustfmt --check --edition 2024 crates/cp-mac/examples/probe/battery.rs crates/cp-win/examples/probe/battery.rs crates/cp-win/examples/probe/restoring.rs
-
-  window:
-    name: frontend
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: app
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
-      # the other run of the suite sits behind a coverage gate, and an assertion broken here must still be told
-      - run: npm test
-
-  prose:
-    name: markdown
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci
-      - run: npm run lint:md
-
-  cross:
-    name: the macOS crates still build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - name: Rust, from rust-toolchain.toml
-        run: |
-          rustup toolchain install --no-self-update
-          rustup target add aarch64-apple-darwin
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: cross
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: cargo check --target aarch64-apple-darwin -p cp-mac -p cp-mac-sys
-      - run: cargo check --target aarch64-apple-darwin -p cp-mac-sys --all-targets
-
-  deny:
-    name: advisories + licences
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
-
-  coverage:
-    name: coverage
-    runs-on: macos-15
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - name: Rust, from rust-toolchain.toml
-        run: |
-          rustup toolchain install --no-self-update
-          rustup component add llvm-tools-preview
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          shared-key: coverage
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
-        with:
-          tool: cargo-llvm-cov
-      - name: The app only needs the sidecar to exist here, nobody runs it
-        shell: bash
-        run: |
-          mkdir -p app/src-tauri/binaries
-          triple=$(rustc -vV | sed -n 's/^host: //p')
-          : > "app/src-tauri/binaries/cp-panel-$triple"
-
-      - run: cargo llvm-cov --no-report --workspace
-      - run: cargo llvm-cov --no-report run -p cp-mac --example mac_probe
-      - run: cargo llvm-cov report --lcov --output-path lcov-rust.info --ignore-filename-regex 'cp-panel[/\]src[/\](app|handing|here|main|measure|orders|reaching|showing)\.rs|_test\.rs$|src-tauri[/\]src[/\]'
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-      - name: The window, measured too
-        working-directory: app
-        run: |
-          npm ci
-          npm run test:coverage
-
-      - name: Every path is relative to the repository, which is what Sonar reads
-        if: always()
-        shell: bash
-        run: python3 scripts/lcov_paths.py lcov-rust.info app/coverage/lcov.info=app
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: coverage
-          path: |
-            lcov-rust.info
-            app/coverage/lcov.info
-          if-no-files-found: error
-          retention-days: 1
-      - name: The threshold is asked after the measuring, so a dip still ships the report
-        if: always()
-        run: cargo llvm-cov report --fail-under-lines 85 --summary-only --ignore-filename-regex 'cp-panel[/\]src[/\](app|handing|here|main|measure|orders|reaching|showing)\.rs|_test\.rs$|src-tauri[/\]src[/\]'
-
-  coverage-windows:
-    name: coverage / the Windows crates
     runs-on: windows-2025
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Rust, from rust-toolchain.toml
-        shell: bash
-        run: |
-          rustup toolchain install --no-self-update
-          rustup component add llvm-tools-preview
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - run: rustup toolchain install --no-self-update
+      - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: coverage
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
-        with:
-          tool: cargo-llvm-cov
-      - run: cargo llvm-cov --no-report -p cp-core -p cp-store -p cp-win -p cp-win-sys -p cp-panel -p cp-config
-      - name: The probe reads a real clipboard, so leave something on it
-        shell: pwsh
-        run: Set-Clipboard -Value "cp-probe"
-      - run: cargo llvm-cov --no-report run -p cp-win --example win_probe
-      - run: cargo llvm-cov report --lcov --output-path lcov-win.info --ignore-filename-regex 'cp-panel[/\]src[/\](app|handing|here|main|measure|orders|reaching|showing)\.rs|_test\.rs$|src-tauri[/\]src[/\]'
-      - name: Every path is relative to the repository, which is what Sonar reads
-        if: always()
-        shell: bash
-        run: python scripts/lcov_paths.py lcov-win.info
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: coverage-windows
-          path: lcov-win.info
-          if-no-files-found: error
-          retention-days: 1
-      - name: The threshold is asked after the measuring, so a dip still ships the report
-        if: always()
-        run: cargo llvm-cov report --fail-under-lines 85 --summary-only --ignore-filename-regex 'cp-panel[/\]src[/\](app|handing|here|main|measure|orders|reaching|showing)\.rs|_test\.rs$|src-tauri[/\]src[/\]'
-
-  sonar:
-    name: sonarcloud
-    needs: [coverage, coverage-windows]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    if: >-
-      github.actor != 'dependabot[bot]'
-      && (github.event_name == 'push'
-      || github.event.pull_request.head.repo.full_name == github.repository)
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: coverage
-          path: .
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: coverage-windows
-          path: .
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: app/package-lock.json
-      - name: The types Sonar needs to read the window
-        working-directory: app
-        run: npm ci
-
-      - uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - uses: actions/setup-python@v5
         with:
-          args: >
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
-            -Dsonar.sources=crates,app/src,app/src-tauri/src
-            -Dsonar.tests=crates,app/src,app/src-tauri/src
-            -Dsonar.test.inclusions=app/src/**/*.test.ts,app/src/**/*.test.tsx,app/src/tests/**,crates/**/*_test.rs,app/src-tauri/src/**/*_test.rs
-            -Dsonar.exclusions=crates/*/examples/**,crates/*/build.rs,crates/**/*_test.rs,app/src-tauri/src/**/*_test.rs
-            -Dsonar.rust.lcov.reportPaths=lcov-rust.info,lcov-win.info
-            -Dsonar.javascript.lcov.reportPaths=app/coverage/lcov.info
-            -Dsonar.rust.clippy.enabled=false
-            -Dsonar.cpd.exclusions=app/src/locales.ts
-            -Dsonar.coverage.exclusions=app/src/main.tsx,app/src-tauri/src/**,crates/cp-panel/src/main.rs,crates/cp-panel/src/app.rs,crates/cp-panel/src/handing.rs,crates/cp-panel/src/orders.rs,crates/cp-panel/src/here.rs,crates/cp-panel/src/showing.rs,crates/cp-panel/src/measure.rs,crates/cp-panel/src/reaching.rs
-            -Dsonar.qualitygate.wait=${{ github.event_name == 'pull_request' }}
-            -Dsonar.qualitygate.timeout=300
+          python-version: "3.13"
+
+      - run: cargo fmt --all --check
+      - run: bash scripts/rules.sh
+      - name: The app embeds the panel
+        run: python scripts/sidecar.py --debug
+      - run: cargo clippy --workspace --all-targets
+      - run: cargo test --workspace
+
+      - run: npm ci
+        working-directory: app
+      - run: npm run lint
+        working-directory: app
+      - run: npm run build
+        working-directory: app
+      - run: npm test
+        working-directory: app

@@ -23,6 +23,7 @@ const CHIP_STEP: f32 = 78.0;
 const KEPT_IN_VIEW: usize = 2;
 const SETTLES: Duration = Duration::from_millis(70);
 const RESTS: Duration = Duration::from_millis(110);
+const CHINESE_FACE: &str = "Microsoft YaHei UI";
 const LOOKS: Duration = Duration::from_millis(250);
 
 #[derive(Clone)]
@@ -990,9 +991,17 @@ pub fn dress_theme(theme: crate::Theme<'_>, kept: crate::kept::Kept) {
     theme.set_selected(opaque(swatch.selected));
     theme.set_selected_edge(opaque(swatch.edge));
     theme.set_grip(opaque(swatch.edge));
-    theme.set_font(look.font.into());
+    theme.set_font(typeface(kept).into());
     theme.set_mono_font(look.mono.into());
     theme.set_zoom(look.size.zoom());
+}
+
+fn typeface(kept: crate::kept::Kept) -> &'static str {
+    let plain = cp_config::look::fonts_here().text.family;
+    if !kept.english && kept.look.font == plain {
+        return CHINESE_FACE;
+    }
+    kept.look.font
 }
 
 fn opaque(rgb: u32) -> slint::Color {

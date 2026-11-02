@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const out = join(root, "THIRD-PARTY-BUNDLED.md");
 const texts = join(root, "THIRD-PARTY-LICENSES.md");
-const REPO = "https://github.com/rgdevment/CopyPaste/blob/main";
+const REPO = "https://github.com/seiya058904/Klipu/blob/main";
 
 const told = (pkg) =>
   typeof pkg.license === "string"
@@ -116,7 +116,7 @@ const shipped = () => {
   return seen;
 };
 
-const SHIPPED = ["x86_64-pc-windows-msvc", "aarch64-apple-darwin", "x86_64-apple-darwin"];
+const SHIPPED = ["x86_64-pc-windows-msvc"];
 
 const crates = () => {
   const seen = new Map();
@@ -314,12 +314,12 @@ const written = [...byText.values()]
 
 writeFileSync(
   out,
-  asWritten(`# Third-party notices — what ships inside CoPanda
+  asWritten(`# Third-party notices — what ships inside Klipu
 
 <!-- Written by \`npm run notices\`. Do not edit by hand. -->
 
-CoPanda is GPL-3.0-only. The binaries carry the work below, each under its own
-licence. Nothing of it was copied into CoPanda's own source; what was copied in
+Klipu is GPL-3.0-only. The binaries carry the work below, each under its own
+licence. Nothing of it was copied into Klipu's own source; what was copied in
 is in
 [THIRD-PARTY.md](${REPO}/THIRD-PARTY.md).
 
@@ -357,7 +357,7 @@ ${kept}
 
 writeFileSync(
   texts,
-  asWritten(`# Licence texts — what the crates inside CoPanda carry
+  asWritten(`# Licence texts — what the crates inside Klipu carry
 
 <!-- Written by \`npm run notices\`. Do not edit by hand. -->
 

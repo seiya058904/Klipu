@@ -80,11 +80,11 @@ export component Pill inherits Rectangle {
         spacing: 5px;
         alignment: center;
         Rectangle {
-            width: 7px;
-            height: 7px;
-            border-radius: 2px;
+            width: 6px;
+            height: 6px;
+            border-radius: 3px;
             background: Hue.of(chip.key);
-            y: (parent.height - 7px) / 2;
+            y: (parent.height - 6px) / 2;
         }
         Text { text: chip.label; color: chip.selected ? Theme.accent : Theme.title; font-size: Theme.fs-meta; font-weight: chip.selected ? 600 : 500; vertical-alignment: center; }
         if chip.count != "" : Text { text: chip.count; color: chip.selected ? Theme.accent-dim : Theme.muted; font-size: Theme.fs-caption; vertical-alignment: center; }
@@ -118,7 +118,7 @@ export component Tag inherits Rectangle {
         Rectangle {
             width: 6px;
             height: 6px;
-            border-radius: 2px;
+            border-radius: 3px;
             background: Hue.of(tag.key);
             y: (parent.height - 6px) / 2;
         }
@@ -337,11 +337,18 @@ export component CardView inherits Rectangle {
                     wrap: no-wrap;
                     vertical-alignment: center;
                 }
+                if !one-kind && card.face != "paint" : Rectangle {
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 3px;
+                    background: Hue.of(card.kind);
+                    y: (parent.height - 6px) / 2;
+                }
                 if !one-kind && card.face != "paint" : Text {
                     text: card.title;
-                    color: Hue.of(card.kind);
+                    color: Theme.title;
                     font-size: Theme.fs-meta;
-                    font-weight: Theme.fw-title;
+                    font-weight: 500;
                     vertical-alignment: center;
                 }
                 if card.aside-said != "" : Text {

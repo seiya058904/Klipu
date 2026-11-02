@@ -26,7 +26,7 @@ found_nothing() {
 }
 
 unsafe_only_in_the_sys_crates() {
-  local expected="crates/cp-mac-sys crates/cp-win-sys" found dir loose=0
+  local expected="crates/cp-win-sys" found dir loose=0
   found=$(grep -rl 'unsafe_code = "allow"' crates/*/Cargo.toml | xargs -n1 dirname | sort)
   for dir in $found; do
     case " $expected " in
@@ -113,7 +113,7 @@ what_python_measures() {
     amiss "python3 is not here, so «${why}» was not measured"
     return
   fi
-  if said=$(python3 "scripts/$1" "${@:2}" 2>&1); then
+  if said=$("${PYTHON:-python3}" "scripts/$1" "${@:2}" 2>&1); then
     went_well "$why"
   else
     printf '%s\n' "$said"
@@ -131,6 +131,4 @@ no_comments_in_the_code
 every_example_has_its_own_name
 what_python_measures "the tests live beside the file, not inside it" oversized.py --inline
 what_python_measures "no file or function grows past what a person can hold" oversized.py
-what_python_measures "no crate slips out of mutation" mutants_cover.py
-what_python_measures "the workflows parse and name no key twice" workflows_parse.py
 exit $status

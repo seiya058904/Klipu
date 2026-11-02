@@ -1,11 +1,11 @@
-# Third-party notices — what ships inside CoPanda
+# Third-party notices — what ships inside Klipu
 
 <!-- Written by `npm run notices`. Do not edit by hand. -->
 
-CoPanda is GPL-3.0-only. The binaries carry the work below, each under its own
-licence. Nothing of it was copied into CoPanda's own source; what was copied in
+Klipu is GPL-3.0-only. The binaries carry the work below, each under its own
+licence. Nothing of it was copied into Klipu's own source; what was copied in
 is in
-[THIRD-PARTY.md](https://github.com/rgdevment/CopyPaste/blob/main/THIRD-PARTY.md).
+[THIRD-PARTY.md](https://github.com/seiya058904/Klipu/blob/main/THIRD-PARTY.md).
 
 The crates are the ones linked into the binaries for the three systems that are
 published, Windows on x86-64 and macOS on Apple silicon and Intel: what only
@@ -18,7 +18,7 @@ order.
 Every package in the window has its notice reproduced below, in full. The crates
 are named with the licence each one declares, and the licence texts they carry
 are in
-[THIRD-PARTY-LICENSES.md](https://github.com/rgdevment/CopyPaste/blob/main/THIRD-PARTY-LICENSES.md), each written once
+[THIRD-PARTY-LICENSES.md](https://github.com/seiya058904/Klipu/blob/main/THIRD-PARTY-LICENSES.md), each written once
 with the crates that carry it.
 
 ## In the window (13 packages)
@@ -39,13 +39,12 @@ with the crates that carry it.
 | `scheduler` | 0.28.0 | MIT |
 | `uc.micro` | 3.0.0 | MIT |
 
-## In the core (425 crates)
+## In the core (308 crates)
 
 | Crate | Version | Licence |
 | --- | --- | --- |
 | `accesskit` | 0.24.1 | MIT OR Apache-2.0 |
 | `accesskit_consumer` | 0.38.0 | MIT OR Apache-2.0 |
-| `accesskit_macos` | 0.26.3 | MIT OR Apache-2.0 |
 | `accesskit_windows` | 0.34.0 | MIT OR Apache-2.0 |
 | `accesskit_winit` | 0.33.2 | Apache-2.0 |
 | `adler2` | 2.0.1 | 0BSD OR MIT OR Apache-2.0 |
@@ -57,16 +56,11 @@ with the crates that carry it.
 | `arboard` | 3.7.0 | MIT OR Apache-2.0 |
 | `arrayref` | 0.3.9 | BSD-2-Clause |
 | `arrayvec` | 0.7.8 | MIT OR Apache-2.0 |
-| `atomic-waker` | 1.1.2 | Apache-2.0 OR MIT |
-| `base64` | 0.22.1 | MIT OR Apache-2.0 |
 | `base64` | 0.23.1 | MIT OR Apache-2.0 |
 | `bit-set` | 0.10.0 | Apache-2.0 OR MIT |
 | `bit-vec` | 0.9.1 | Apache-2.0 OR MIT |
-| `bitflags` | 1.3.2 | MIT/Apache-2.0 |
 | `bitflags` | 2.13.2 | MIT OR Apache-2.0 |
 | `blake3` | 1.8.7 | CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception |
-| `block2` | 0.5.1 | MIT |
-| `block2` | 0.6.2 | MIT |
 | `brotli` | 9.0.0 | BSD-3-Clause AND MIT |
 | `brotli-decompressor` | 6.0.1 | BSD-3-Clause/MIT |
 | `bytemuck` | 1.25.2 | Zlib OR Apache-2.0 OR MIT |
@@ -74,7 +68,6 @@ with the crates that carry it.
 | `bytes` | 1.12.1 | MIT |
 | `cfb` | 0.14.0 | MIT |
 | `cfg-if` | 1.0.5 | MIT OR Apache-2.0 |
-| `cgl` | 0.3.2 | MIT / Apache-2.0 |
 | `chrono` | 0.4.45 | MIT OR Apache-2.0 |
 | `clipboard-win` | 5.4.1 | BSL-1.0 |
 | `clru` | 0.6.3 | MIT |
@@ -83,13 +76,6 @@ with the crates that carry it.
 | `const-field-offset` | 0.2.1 | MIT OR Apache-2.0 |
 | `constant_time_eq` | 0.4.2 | CC0-1.0 OR MIT-0 OR Apache-2.0 |
 | `cookie` | 0.18.2 | MIT OR Apache-2.0 |
-| `core-foundation` | 0.10.1 | MIT OR Apache-2.0 |
-| `core-foundation` | 0.9.4 | MIT OR Apache-2.0 |
-| `core-foundation-sys` | 0.8.7 | MIT OR Apache-2.0 |
-| `core-graphics` | 0.23.2 | MIT OR Apache-2.0 |
-| `core-graphics` | 0.25.0 | MIT OR Apache-2.0 |
-| `core-graphics-types` | 0.1.3 | MIT OR Apache-2.0 |
-| `core-graphics-types` | 0.2.0 | MIT OR Apache-2.0 |
 | `core_detect` | 1.0.0 | MIT/Apache-2.0 |
 | `cpufeatures` | 0.3.1 | MIT OR Apache-2.0 |
 | `crc32fast` | 1.5.3 | MIT OR Apache-2.0 |
@@ -103,25 +89,18 @@ with the crates that carry it.
 | `derive_more` | 2.1.1 | MIT |
 | `dirs` | 7.0.0 | MIT OR Apache-2.0 |
 | `dirs-sys` | 0.5.0 | MIT OR Apache-2.0 |
-| `dispatch` | 0.2.0 | MIT |
-| `dispatch2` | 0.3.1 | Zlib OR Apache-2.0 OR MIT |
 | `dpi` | 0.1.2 | Apache-2.0 AND MIT |
 | `dunce` | 1.0.5 | CC0-1.0 OR MIT-0 OR Apache-2.0 |
-| `embed_plist` | 1.2.2 | MIT OR Apache-2.0 |
 | `encoding_rs` | 0.8.42 | (Apache-2.0 OR MIT) AND BSD-3-Clause |
 | `equivalent` | 1.0.3 | Apache-2.0 OR MIT |
 | `erased-serde` | 0.4.10 | MIT OR Apache-2.0 |
-| `errno` | 0.3.14 | MIT OR Apache-2.0 |
 | `error-code` | 3.4.0 | BSL-1.0 |
 | `euclid` | 0.22.14 | MIT OR Apache-2.0 |
-| `extended` | 0.1.0 | MIT |
 | `fallible-iterator` | 0.3.0 | MIT/Apache-2.0 |
 | `fallible-streaming-iterator` | 0.1.9 | MIT/Apache-2.0 |
-| `fastrand` | 2.5.0 | Apache-2.0 OR MIT |
 | `fax` | 0.2.7 | MIT |
 | `fdeflate` | 0.3.7 | MIT OR Apache-2.0 |
 | `field-offset` | 0.3.6 | MIT OR Apache-2.0 |
-| `filetime` | 0.2.29 | MIT/Apache-2.0 |
 | `fixed_decimal` | 0.7.2 | Unicode-3.0 |
 | `flate2` | 1.1.10 | MIT OR Apache-2.0 |
 | `float-cmp` | 0.9.0 | MIT |
@@ -130,17 +109,8 @@ with the crates that carry it.
 | `font-types` | 0.12.7 | MIT OR Apache-2.0 |
 | `fontdb` | 0.24.0 | MIT |
 | `fontique` | 0.11.1 | Apache-2.0 OR MIT |
-| `foreign-types` | 0.5.0 | MIT/Apache-2.0 |
-| `foreign-types-shared` | 0.3.1 | MIT/Apache-2.0 |
 | `form_urlencoded` | 1.2.2 | MIT OR Apache-2.0 |
-| `futures-channel` | 0.3.34 | MIT OR Apache-2.0 |
-| `futures-core` | 0.3.34 | MIT OR Apache-2.0 |
-| `futures-sink` | 0.3.34 | MIT OR Apache-2.0 |
-| `futures-task` | 0.3.34 | MIT OR Apache-2.0 |
-| `futures-util` | 0.3.34 | MIT OR Apache-2.0 |
-| `getrandom` | 0.2.17 | MIT OR Apache-2.0 |
 | `getrandom` | 0.3.4 | MIT OR Apache-2.0 |
-| `getrandom` | 0.4.3 | MIT OR Apache-2.0 |
 | `gif` | 0.14.2 | MIT OR Apache-2.0 |
 | `glob` | 0.3.4 | MIT OR Apache-2.0 |
 | `global-hotkey` | 0.8.0 | Apache-2.0 OR MIT |
@@ -157,18 +127,11 @@ with the crates that carry it.
 | `heck` | 0.5.0 | MIT OR Apache-2.0 |
 | `htmlparser` | 0.2.1 | MIT OR Apache-2.0 |
 | `http` | 1.5.0 | MIT OR Apache-2.0 |
-| `http-body` | 1.1.0 | MIT |
-| `http-body-util` | 0.1.5 | MIT |
-| `httparse` | 1.10.1 | MIT OR Apache-2.0 |
-| `hyper` | 1.12.0 | MIT |
-| `hyper-rustls` | 0.27.10 | Apache-2.0 OR ISC OR MIT |
-| `hyper-util` | 0.1.21 | MIT |
 | `i-slint-backend-selector` | 1.18.1 | GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0 |
 | `i-slint-backend-winit` | 1.18.1 | GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0 |
 | `i-slint-common` | 1.18.1 | GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0 |
 | `i-slint-core` | 1.18.1 | GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0 |
 | `i-slint-renderer-skia` | 1.18.1 | GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0 |
-| `iana-time-zone` | 0.1.65 | MIT OR Apache-2.0 |
 | `icu_collections` | 2.3.0 | Unicode-3.0 |
 | `icu_decimal` | 2.3.0 | Unicode-3.0 |
 | `icu_decimal_data` | 2.3.0 | Unicode-3.0 |
@@ -189,14 +152,12 @@ with the crates that carry it.
 | `imagesize` | 0.15.0 | MIT |
 | `indexmap` | 2.14.2 | Apache-2.0 OR MIT |
 | `infer` | 0.22.0 | MIT |
-| `ipnet` | 2.12.2 | MIT OR Apache-2.0 |
 | `itoa` | 1.0.18 | MIT OR Apache-2.0 |
 | `json-patch` | 4.2.0 | MIT/Apache-2.0 |
 | `jsonptr` | 0.7.1 | MIT OR Apache-2.0 |
 | `keyboard-types` | 0.7.0 | MIT OR Apache-2.0 |
 | `keyboard-types` | 0.8.3 | MIT OR Apache-2.0 |
 | `kurbo` | 0.13.1 | Apache-2.0 OR MIT |
-| `lazy_static` | 1.5.1 | MIT OR Apache-2.0 |
 | `libc` | 0.2.191 | MIT OR Apache-2.0 |
 | `libloading` | 0.8.9 | ISC |
 | `libm` | 0.2.16 | MIT |
@@ -213,7 +174,6 @@ with the crates that carry it.
 | `memmap2` | 0.9.11 | MIT OR Apache-2.0 |
 | `memoffset` | 0.9.1 | MIT |
 | `mime` | 0.3.17 | MIT OR Apache-2.0 |
-| `minisign-verify` | 0.3.0 | MIT |
 | `miniz_oxide` | 0.8.9 | MIT OR Zlib OR Apache-2.0 |
 | `miniz_oxide` | 0.9.1 | MIT OR Zlib OR Apache-2.0 |
 | `mio` | 1.2.4 | MIT |
@@ -222,46 +182,13 @@ with the crates that carry it.
 | `muda` | 0.20.0 | Apache-2.0 OR MIT |
 | `naga` | 30.0.1 | MIT OR Apache-2.0 |
 | `naga-types` | 30.0.1 | MIT OR Apache-2.0 |
-| `num-complex` | 0.4.6 | MIT OR Apache-2.0 |
 | `num-conv` | 0.2.2 | MIT OR Apache-2.0 |
 | `num-traits` | 0.2.19 | MIT OR Apache-2.0 |
-| `objc-sys` | 0.3.5 | MIT |
-| `objc2` | 0.5.3 | MIT |
-| `objc2` | 0.6.5 | MIT |
-| `objc2-app-kit` | 0.2.2 | MIT |
-| `objc2-app-kit` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-application-services` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-av-foundation` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-avf-audio` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-cloud-kit` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-audio-types` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-data` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-foundation` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-graphics` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-image` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-media` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-ml` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-services` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-text` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-core-video` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-encode` | 4.1.0 | MIT |
-| `objc2-exception-helper` | 0.1.1 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-foundation` | 0.2.2 | MIT |
-| `objc2-foundation` | 0.3.2 | MIT |
-| `objc2-image-io` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-media-toolbox` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-metal` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-osa-kit` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-quartz-core` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-service-management` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-vision` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
-| `objc2-web-kit` | 0.3.2 | Zlib OR Apache-2.0 OR MIT |
 | `once_cell` | 1.21.4 | MIT OR Apache-2.0 |
 | `open` | 5.4.4 | MIT |
 | `option-ext` | 0.2.0 | MPL-2.0 |
 | `ordered-float` | 5.5.0 | MIT |
 | `os_pipe` | 1.2.3 | MIT |
-| `osakit` | 0.3.1 | MIT OR Apache-2.0 |
 | `parking_lot` | 0.12.5 | MIT OR Apache-2.0 |
 | `parking_lot_core` | 0.9.12 | MIT OR Apache-2.0 |
 | `parlance` | 0.1.1 | Apache-2.0 OR MIT |
@@ -289,31 +216,20 @@ with the crates that carry it.
 | `quick-xml` | 0.42.0 | MIT |
 | `range-alloc` | 0.1.5 | MIT OR Apache-2.0 |
 | `raw-window-handle` | 0.6.2 | MIT OR Apache-2.0 OR Zlib |
-| `raw-window-metal` | 1.1.0 | MIT OR Apache-2.0 |
 | `read-fonts` | 0.41.0 | MIT OR Apache-2.0 |
 | `regex` | 1.13.1 | MIT OR Apache-2.0 |
 | `regex-automata` | 0.4.18 | MIT OR Apache-2.0 |
-| `regex-lite` | 0.1.9 | MIT OR Apache-2.0 |
 | `regex-syntax` | 0.8.11 | MIT OR Apache-2.0 |
 | `renderdoc-sys` | 1.1.0 | MIT OR Apache-2.0 |
-| `reqwest` | 0.13.5 | MIT OR Apache-2.0 |
 | `resvg` | 0.48.1 | Apache-2.0 OR MIT |
 | `rfd` | 0.16.0 | MIT |
 | `rgb` | 0.8.53 | MIT |
-| `ring` | 0.17.14 | Apache-2.0 AND ISC |
 | `roxmltree` | 0.21.1 | MIT OR Apache-2.0 |
 | `rusqlite` | 0.40.2 | MIT |
 | `rustc-hash` | 1.1.0 | Apache-2.0/MIT |
-| `rustix` | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
-| `rustls` | 0.23.46 | Apache-2.0 OR ISC OR MIT |
-| `rustls-pki-types` | 1.15.1 | MIT OR Apache-2.0 |
-| `rustls-platform-verifier` | 0.7.1 | MIT OR Apache-2.0 |
-| `rustls-webpki` | 0.103.16 | ISC |
 | `same-file` | 1.0.6 | Unlicense/MIT |
 | `scoped-tls-hkt` | 0.1.5 | MIT/Apache-2.0 |
 | `scopeguard` | 1.2.0 | MIT OR Apache-2.0 |
-| `security-framework` | 3.7.0 | MIT OR Apache-2.0 |
-| `security-framework-sys` | 2.17.0 | MIT OR Apache-2.0 |
 | `semver` | 1.0.28 | MIT OR Apache-2.0 |
 | `serde` | 1.0.229 | MIT OR Apache-2.0 |
 | `serde-untagged` | 0.1.9 | MIT OR Apache-2.0 |
@@ -342,27 +258,10 @@ with the crates that carry it.
 | `static_assertions` | 1.1.0 | MIT OR Apache-2.0 |
 | `strict-num` | 0.1.1 | MIT |
 | `strum` | 0.28.0 | MIT |
-| `subtle` | 2.6.1 | BSD-3-Clause |
 | `svgtypes` | 0.16.1 | Apache-2.0 OR MIT |
-| `symphonia` | 0.6.1 | MPL-2.0 |
-| `symphonia-bundle-flac` | 0.6.1 | MPL-2.0 |
-| `symphonia-bundle-mp3` | 0.6.1 | MPL-2.0 |
-| `symphonia-codec-aac` | 0.6.1 | MPL-2.0 |
-| `symphonia-codec-pcm` | 0.6.1 | MPL-2.0 |
-| `symphonia-codec-vorbis` | 0.6.1 | MPL-2.0 |
-| `symphonia-common` | 0.6.1 | MPL-2.0 |
-| `symphonia-core` | 0.6.1 | MPL-2.0 |
-| `symphonia-format-isomp4` | 0.6.1 | MPL-2.0 |
-| `symphonia-format-ogg` | 0.6.1 | MPL-2.0 |
-| `symphonia-format-riff` | 0.6.1 | MPL-2.0 |
-| `symphonia-metadata` | 0.6.1 | MPL-2.0 |
-| `sync_wrapper` | 1.0.2 | Apache-2.0 |
 | `sys-locale` | 0.3.2 | MIT OR Apache-2.0 |
-| `system-configuration` | 0.7.0 | MIT OR Apache-2.0 |
-| `system-configuration-sys` | 0.6.0 | MIT OR Apache-2.0 |
 | `taffy` | 0.10.1 | MIT |
 | `tao` | 0.37.1 | Apache-2.0 |
-| `tar` | 0.4.46 | MIT OR Apache-2.0 |
 | `tauri` | 2.12.4 | Apache-2.0 OR MIT |
 | `tauri-plugin-dialog` | 2.8.3 | Apache-2.0 OR MIT |
 | `tauri-plugin-fs` | 2.7.1 | Apache-2.0 OR MIT |
@@ -370,11 +269,9 @@ with the crates that carry it.
 | `tauri-plugin-opener` | 2.7.2 | Apache-2.0 OR MIT |
 | `tauri-plugin-shell` | 2.5.0 | Apache-2.0 OR MIT |
 | `tauri-plugin-single-instance` | 2.5.4 | Apache-2.0 OR MIT |
-| `tauri-plugin-updater` | 2.14.0 | Apache-2.0 OR MIT |
 | `tauri-runtime` | 2.12.2 | Apache-2.0 OR MIT |
 | `tauri-runtime-wry` | 2.12.2 | Apache-2.0 OR MIT |
 | `tauri-utils` | 2.10.2 | Apache-2.0 OR MIT |
-| `tempfile` | 3.27.0 | MIT OR Apache-2.0 |
 | `thiserror` | 2.0.21 | MIT OR Apache-2.0 |
 | `tiff` | 0.11.3 | MIT |
 | `time` | 0.3.55 | MIT OR Apache-2.0 |
@@ -384,20 +281,13 @@ with the crates that carry it.
 | `tinystr` | 0.8.4 | Unicode-3.0 |
 | `tinyvec` | 1.13.3 | Zlib OR Apache-2.0 OR MIT |
 | `tokio` | 1.54.0 | MIT |
-| `tokio-rustls` | 0.26.6 | MIT OR Apache-2.0 |
-| `tokio-util` | 0.7.20 | MIT |
 | `toml` | 1.1.8+spec-1.1.0 | MIT OR Apache-2.0 |
 | `toml_datetime` | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 |
 | `toml_parser` | 1.1.5+spec-1.1.0 | MIT OR Apache-2.0 |
 | `toml_writer` | 1.1.3+spec-1.1.0 | MIT OR Apache-2.0 |
-| `tower` | 0.5.3 | MIT |
-| `tower-http` | 0.6.11 | MIT |
-| `tower-layer` | 0.3.3 | MIT |
-| `tower-service` | 0.3.3 | MIT |
 | `tracing` | 0.1.44 | MIT |
 | `tracing-core` | 0.1.36 | MIT |
 | `tray-icon` | 0.25.1 | MIT OR Apache-2.0 |
-| `try-lock` | 0.2.5 | MIT |
 | `typeid` | 1.0.3 | MIT OR Apache-2.0 |
 | `unicase` | 2.10.0 | MIT OR Apache-2.0 |
 | `unicode-bidi` | 0.3.18 | MIT OR Apache-2.0 |
@@ -408,7 +298,6 @@ with the crates that carry it.
 | `unicode-segmentation` | 1.13.3 | MIT OR Apache-2.0 |
 | `unicode-vo` | 0.1.0 | MIT/Apache-2.0 |
 | `unicode-width` | 0.2.2 | MIT OR Apache-2.0 |
-| `untrusted` | 0.9.0 | ISC |
 | `url` | 2.5.8 | MIT OR Apache-2.0 |
 | `urlpattern` | 0.6.0 | MIT |
 | `usvg` | 0.48.1 | Apache-2.0 OR MIT |
@@ -416,7 +305,6 @@ with the crates that carry it.
 | `uuid` | 1.28.0 | Apache-2.0 OR MIT |
 | `vtable` | 0.5.0 | MIT OR Apache-2.0 |
 | `walkdir` | 2.5.0 | Unlicense/MIT |
-| `want` | 0.3.2 | MIT |
 | `web-time` | 1.1.0 | MIT OR Apache-2.0 |
 | `webbrowser` | 1.2.4 | MIT OR Apache-2.0 |
 | `webview2-com` | 0.39.1 | MIT |
@@ -424,7 +312,6 @@ with the crates that carry it.
 | `weezl` | 0.1.12 | MIT OR Apache-2.0 |
 | `wgpu` | 30.0.1 | MIT OR Apache-2.0 |
 | `wgpu-core` | 30.0.1 | MIT OR Apache-2.0 |
-| `wgpu-core-deps-apple` | 30.0.1 | MIT OR Apache-2.0 |
 | `wgpu-core-deps-windows-linux-android` | 30.0.1 | MIT OR Apache-2.0 |
 | `wgpu-hal` | 30.0.1 | MIT OR Apache-2.0 |
 | `wgpu-naga-bridge` | 30.0.1 | MIT OR Apache-2.0 |
@@ -437,7 +324,6 @@ with the crates that carry it.
 | `windows-future` | 0.3.2 | MIT OR Apache-2.0 |
 | `windows-link` | 0.2.1 | MIT OR Apache-2.0 |
 | `windows-numerics` | 0.3.1 | MIT OR Apache-2.0 |
-| `windows-registry` | 0.6.1 | MIT OR Apache-2.0 |
 | `windows-result` | 0.4.1 | MIT OR Apache-2.0 |
 | `windows-strings` | 0.5.1 | MIT OR Apache-2.0 |
 | `windows-sys` | 0.52.0 | MIT OR Apache-2.0 |
@@ -453,16 +339,13 @@ with the crates that carry it.
 | `winit` | 0.30.13 | Apache-2.0 |
 | `winnow` | 1.0.4 | MIT |
 | `winreg` | 0.56.0 | MIT |
-| `write-fonts` | 0.50.0 | MIT OR Apache-2.0 |
 | `writeable` | 0.6.4 | Unicode-3.0 |
 | `wry` | 0.57.0 | Apache-2.0 OR MIT |
-| `xattr` | 1.6.1 | MIT OR Apache-2.0 |
 | `xmlwriter` | 0.1.0 | MIT |
 | `xxhash-rust` | 0.8.19 | BSL-1.0 |
 | `yoke` | 0.8.3 | Unicode-3.0 |
 | `zerocopy` | 0.8.63 | BSD-2-Clause OR Apache-2.0 OR MIT |
 | `zerofrom` | 0.1.8 | Unicode-3.0 |
-| `zeroize` | 1.9.1 | Apache-2.0 OR MIT |
 | `zerotrie` | 0.2.5 | Unicode-3.0 |
 | `zerovec` | 0.11.8 | Unicode-3.0 |
 | `zmij` | 1.0.23 | MIT |
