@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title description">
+  <title id="title">Klipu — the clipboard, within reach</title>
+  <desc id="description">An illustrated violet-and-ink cover with Klipu's logo, its Ctrl+Alt+K shortcut and a stylized clipboard-history panel. This is artwork, not an application screenshot.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FBFBFF"/>
+      <stop offset=".54" stop-color="#E9EAFF"/>
+      <stop offset="1" stop-color="#CBD3FF"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#837BEE"/>
+      <stop offset="1" stop-color="#4338CA"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#24233F"/>
+      <stop offset="1" stop-color="#14172C"/>
+    </linearGradient>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M30 0H0V30" fill="none" stroke="#7677B4" stroke-width=".65" opacity=".25"/>
+    </pattern>
+    <filter id="soft-shadow" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="19" flood-color="#293160" flood-opacity=".23"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="430" rx="28" fill="url(#background)"/>
+  <rect width="1200" height="430" rx="28" fill="url(#grid)" opacity=".64"/>
+  <circle cx="1026" cy="81" r="255" fill="#C7C8FF" opacity=".43"/>
+  <circle cx="1138" cy="357" r="210" fill="#ABAFF5" opacity=".25"/>
+  <circle cx="508" cy="405" r="130" fill="#D5D8FF" opacity=".46"/>
+  <path d="M0 360C192 311 313 402 507 366S860 317 1200 386" fill="none" stroke="#FFF" stroke-width="2" opacity=".53"/>
+  <g transform="translate(64 47)">
+    <rect x="19" y="0" width="25" height="15" rx="5" fill="#A5B4FC"/>
+    <rect x="0" y="8" width="63" height="62" rx="17" fill="#4338CA"/>
+    <rect x="19" y="5" width="25" height="9" rx="4" fill="#A5B4FC"/>
+    <path d="M21 25V54M43 25 21 41M28 35 44 54" fill="none" stroke="#FFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="146" y="91" font-family="Segoe UI,Arial,sans-serif" font-size="34" font-weight="750" letter-spacing="3.7" fill="#2C2868">KLIPU</text>
+  <text x="66" y="174" font-family="Segoe UI,Arial,sans-serif" font-size="43" font-weight="750" letter-spacing="-1.9" fill="#212347">Everything you copy,</text>
+  <text x="66" y="223" font-family="Segoe UI,Arial,sans-serif" font-size="43" font-weight="750" letter-spacing="-1.9" fill="#4338CA">ready when you are.</text>
+  <text x="68" y="261" font-family="Segoe UI,Arial,sans-serif" font-size="18" fill="#555776">A quiet home for your clipboard history.</text>
+  <g font-family="Segoe UI,Arial,sans-serif" font-weight="650" text-anchor="middle">
+    <rect x="68" y="298" width="71" height="42" rx="11" fill="#FFF" stroke="#C9CBE7"/>
+    <rect x="151" y="298" width="61" height="42" rx="11" fill="#FFF" stroke="#C9CBE7"/>
+    <rect x="224" y="298" width="48" height="42" rx="11" fill="#FFF" stroke="#C9CBE7"/>
+    <text x="103.5" y="325" font-size="16" fill="#302E60">Ctrl</text>
+    <text x="181.5" y="325" font-size="16" fill="#302E60">Alt</text>
+    <text x="248" y="325" font-size="16" fill="#302E60">K</text>
+  </g>
+  <text x="287" y="326" font-family="Segoe UI,Arial,sans-serif" font-size="16" fill="#5D6087">— open Klipu anywhere</text>
+  <text x="69" y="385" font-family="Segoe UI,Arial,sans-serif" font-size="13" letter-spacing="2" font-weight="700" fill="#777BA0">LOCAL-FIRST  /  FAST SEARCH  /  NO ACCOUNT</text>
+  <g filter="url(#soft-shadow)">
+    <rect x="644" y="33" width="499" height="363" rx="23" fill="url(#panel)" stroke="#424165" stroke-width="1.5"/>
+    <rect x="644" y="33" width="499" height="55" rx="23" fill="#343353"/>
+    <path d="M644 68H1143V88H644Z" fill="#343353"/>
+    <circle cx="679" cy="60" r="6" fill="#FAAAA7"/>
+    <circle cx="701" cy="60" r="6" fill="#E5CE86"/>
+    <circle cx="723" cy="60" r="6" fill="#A4D9C5"/>
+    <text x="752" y="66" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#F7F5FF">Clipboard history</text>
+    <rect x="669" y="104" width="449" height="51" rx="12" fill="#1B1B35" stroke="#494765"/>
+    <circle cx="696" cy="127" r="8" fill="none" stroke="#9591C9" stroke-width="2.2"/>
+    <path d="m702 133 7 7" stroke="#9591C9" stroke-width="2.2" stroke-linecap="round"/>
+    <text x="721" y="135" font-family="Segoe UI,Arial,sans-serif" font-size="15" fill="#9695B5">Search something you copied...</text>
+    <rect x="669" y="169" width="70" height="26" rx="13" fill="#6A61D4"/>
+    <rect x="746" y="169" width="66" height="26" rx="13" fill="#2D2C49"/>
+    <rect x="819" y="169" width="69" height="26" rx="13" fill="#2D2C49"/>
+    <rect x="895" y="169" width="58" height="26" rx="13" fill="#2D2C49"/>
+    <g font-family="Segoe UI,Arial,sans-serif" font-size="11.5" font-weight="600" text-anchor="middle">
+      <text x="704" y="186" fill="#FFF">All</text>
+      <text x="779" y="186" fill="#B9B6D5">Text</text>
+      <text x="853" y="186" fill="#B9B6D5">Image</text>
+      <text x="924" y="186" fill="#B9B6D5">File</text>
+    </g>
+    <rect x="669" y="206" width="449" height="57" rx="11" fill="#39345F" stroke="#8277EF" stroke-width="1.2"/>
+    <rect x="681" y="218" width="34" height="34" rx="9" fill="#7567DD"/>
+    <path d="M691 229h15M691 235h11M691 241h13" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>
+    <text x="730" y="231" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="650" fill="#F4F2FF">The idea I wanted to keep</text>
+    <text x="730" y="248" font-family="Segoe UI,Arial,sans-serif" font-size="11.5" fill="#BCB5DD">Text · Just now</text>
+    <rect x="1078" y="226" width="21" height="18" rx="5" fill="#8275E7"/>
+    <path d="M1085 231v8m0-8h8" stroke="#FFF" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+    <rect x="669" y="270" width="449" height="55" rx="11" fill="#292942"/>
+    <rect x="681" y="281" width="34" height="34" rx="9" fill="#345D79"/>
+    <rect x="687" y="288" width="22" height="20" rx="4" fill="none" stroke="#B3E0EA" stroke-width="1.6"/>
+    <path d="m689 305 6-6 4 4 5-7 4 9" fill="none" stroke="#B3E0EA" stroke-width="1.6"/>
+    <text x="730" y="293" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="650" fill="#EFEFFF">Design reference.png</text>
+    <text x="730" y="310" font-family="Segoe UI,Arial,sans-serif" font-size="11.5" fill="#A9A6C3">Image · Earlier today</text>
+    <rect x="669" y="332" width="449" height="48" rx="11" fill="#292942"/>
+    <rect x="681" y="340" width="34" height="31" rx="9" fill="#536075"/>
+    <path d="M690 349h13v13h-13zM694 346h13v13" fill="none" stroke="#D0E0F2" stroke-width="1.5"/>
+    <text x="730" y="352" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="650" fill="#EFEFFF">A useful link</text>
+    <text x="730" y="369" font-family="Segoe UI,Arial,sans-serif" font-size="11.5" fill="#A9A6C3">Link · Yesterday</text>
+  </g>
+</svg>
