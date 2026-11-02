@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { adopt, t } from "./locales";
+import { adopt } from "./locales";
 
 export const notices = (): Promise<string> => invoke<string>("notices");
 
@@ -18,18 +18,13 @@ export type Kept = {
   theme: Look;
   shortcut: string;
   "plain-shortcut"?: string;
-  "forms-shortcut"?: string;
   "hides-when-left": boolean;
   "keeps-days": number;
   "images-quota-mb": number;
   "text-size"?: TextSize;
   density?: Density;
-  font?: string | null;
-  "code-font"?: string | null;
   accent?: string;
 };
-
-export type Offered = { id: string; label: string; css: string };
 
 export type Paint = {
   id: string;
@@ -40,10 +35,6 @@ export type Paint = {
 };
 
 export type Choices = {
-  text: Offered;
-  texts: Offered[];
-  code: Offered;
-  codes: Offered[];
   accents: Paint[];
 };
 
@@ -58,8 +49,6 @@ export const SHUT_LINES: Record<Density, number> = { compact: 1, normal: 2, comf
 export const PLAIN_LOOK: Partial<Kept> = {
   "text-size": "normal",
   density: "normal",
-  font: null,
-  "code-font": null,
   accent: "indigo",
 };
 
@@ -71,16 +60,6 @@ export function useChoices() {
       .catch(() => setChoices(null));
   }, []);
   return choices;
-}
-
-const REACHABLE = "button, select, input, textarea, a[href], [role='switch']";
-
-export function reachable(root: ParentNode) {
-  for (const one of root.querySelectorAll(REACHABLE)) {
-    if (!one.hasAttribute("tabindex")) {
-      one.setAttribute("tabindex", "0");
-    }
-  }
 }
 
 export function wear(look: Look) {
@@ -169,38 +148,15 @@ export function useKept() {
   return { kept, trouble, change, look };
 }
 
-export function onMac() {
-  return /Mac|iPhone|iPad/.test(navigator.userAgent);
-}
-
-const MAC_KEYS: Record<string, string> = { Ctrl: "⌃", Alt: "⌥", Shift: "⇧", Cmd: "⌘" };
-
-// Apple lists them Control, Option, Shift, Command, whatever order the combination was stored in
-const MAC_ORDER = Object.values(MAC_KEYS);
-
-export function caps(shortcut: string, mac: boolean): string[] {
-  const keys = shortcut
+export function caps(shortcut: string): string[] {
+  return shortcut
     .split("+")
     .map((one) => one.trim())
-    .filter((one) => one.length > 0)
-    .map((one) => (mac ? (MAC_KEYS[one] ?? one) : one));
-  if (!mac) {
-    return keys;
-  }
-  const held = MAC_ORDER.filter((one) => keys.includes(one));
-  return [...held, ...keys.filter((one) => !MAC_ORDER.includes(one))];
+    .filter((one) => one.length > 0);
 }
 
-export function asKeys(shortcut: string, mac: boolean): string {
-  const keys = caps(shortcut, mac);
-  if (!mac) {
-    return keys.join(" + ");
-  }
-  // the glyphs sit against each other, but anything spelled out would weld into its neighbour
-  return keys.reduce((said, one, at) => {
-    const apart = at > 0 && (keys[at - 1].length > 1 || one.length > 1);
-    return said + (apart ? " " : "") + one;
-  }, "");
+export function asKeys(shortcut: string): string {
+  return caps(shortcut).join(" + ");
 }
 
 export function whereItLives() {
@@ -227,26 +183,26 @@ const ALIASES: Record<string, string> = {
 
 const EITHER = ["cmdorctrl", "commandorcontrol", "cmdorcontrol", "commandorctrl"];
 
-function canonical(key: string, mac: boolean): string {
+function canonical(key: string): string {
   const bare = /^(key|digit)(.)$/.exec(key)?.[2] ?? key;
   if (EITHER.includes(bare)) {
-    return mac ? "cmd" : "ctrl";
+    return "ctrl";
   }
   return ALIASES[bare] ?? bare;
 }
 
-function keysOf(shortcut: string, mac: boolean): string[] {
+function keysOf(shortcut: string): string[] {
   return shortcut
     .split("+")
     .map((one) => one.trim().toLowerCase())
     .filter((one) => one.length > 0)
-    .map((one) => canonical(one, mac))
+    .map(canonical)
     .sort((one, other) => one.localeCompare(other));
 }
 
-export function sameKeys(one: string, other: string, mac = onMac()): boolean {
-  const mine = keysOf(one, mac);
-  const theirs = keysOf(other, mac);
+export function sameKeys(one: string, other: string): boolean {
+  const mine = keysOf(one);
+  const theirs = keysOf(other);
   return mine.length > 0 && mine.join("+") === theirs.join("+");
 }
 
@@ -305,7 +261,7 @@ export function empty(): Promise<void> {
 
 export type Keys = { wanted: string; bound: boolean };
 
-export type Role = "panel" | "plain" | "forms";
+export type Role = "panel" | "plain";
 
 export function useKeys(shortcut: string, role: Role = "panel") {
   const [keys, setKeys] = useState<Keys | null>(null);
@@ -344,7 +300,7 @@ export function useKeys(shortcut: string, role: Role = "panel") {
   return { keys, spare, recheck: ask };
 }
 
-export type Waking = { offered: boolean; wakes: boolean; theirs: boolean; managed: boolean };
+export type Waking = { offered: boolean; wakes: boolean; theirs: boolean };
 
 export function useWaking() {
   const [waking, setWaking] = useState<Waking | null>(null);
@@ -366,138 +322,4 @@ export function useWaking() {
   }, []);
 
   return { waking, trouble, ask };
-}
-
-export type Trust = {
-  offered: boolean;
-  pastes: boolean;
-  secureInput: boolean;
-  clipboard: "allowed" | "asks" | "denied";
-};
-
-export const PRIVACY_PANE =
-  "x-apple.systempreferences://com.apple.preference.security?Privacy_Accessibility";
-
-export function useTrust() {
-  const [trust, setTrust] = useState<Trust | null>(null);
-  const [asked, setAsked] = useState(false);
-
-  const look = useCallback(() => {
-    invoke<Trust>("trust")
-      .then(setTrust)
-      .catch(() => setTrust(null));
-  }, []);
-
-  useEffect(look, [look]);
-
-  useEffect(() => {
-    const again = setInterval(look, 4_000);
-    return () => clearInterval(again);
-  }, [look]);
-
-  const ask = useCallback(() => {
-    setAsked(true);
-    invoke<Trust>("ask_trust")
-      .then(setTrust)
-      .catch(() => {});
-  }, []);
-
-  return { trust, asked, ask };
-}
-
-export type Route = "store" | "download";
-
-export type Ready = { version: string; installs: boolean };
-
-export type Looked = { route: Route; looked: boolean; ready: Ready | null };
-
-export function troubleSaid(why: unknown): string {
-  switch (String(why)) {
-    case "offline":
-      return t("updateOffline");
-    case "unreadable":
-      return t("updateUnreadable");
-    case "publishing":
-      return t("updatePublishing");
-    case "gone":
-    case "nothing":
-      return t("updateGone");
-    case "busy":
-      return t("updateBusy");
-    default:
-      return t("updateFailed");
-  }
-}
-
-export function useUpdate() {
-  const [seen, setSeen] = useState<Looked | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [trouble, setTrouble] = useState<string | null>(null);
-  const alive = useRef(true);
-  const inFlight = useRef(false);
-
-  useEffect(() => {
-    alive.current = true;
-    return () => {
-      alive.current = false;
-    };
-  }, []);
-
-  const look = useCallback((nowPlease: boolean) => {
-    if (inFlight.current) {
-      return;
-    }
-    inFlight.current = true;
-    setTrouble(null);
-    setBusy(true);
-    invoke<Looked>("update_ready", { nowPlease })
-      .then((one) => {
-        if (alive.current) setSeen(one);
-      })
-      .catch((why) => {
-        if (alive.current) setTrouble(troubleSaid(why));
-      })
-      .finally(() => {
-        inFlight.current = false;
-        if (alive.current) setBusy(false);
-      });
-  }, []);
-
-  useEffect(() => look(false), [look]);
-
-  const install = useCallback(() => {
-    setTrouble(null);
-    setBusy(true);
-    invoke<void>("update_install").catch((why) => {
-      const said = String(why);
-      setTrouble(troubleSaid(said));
-      setBusy(false);
-      if (said === "gone" || said === "nothing") {
-        setSeen((was) => (was ? { ...was, ready: null } : was));
-      }
-    });
-  }, []);
-
-  return { seen, busy, trouble, look, install };
-}
-
-const LOOKS_AGAIN = 60 * 60 * 1000;
-
-export function useWaiting() {
-  const [version, setVersion] = useState<string | null>(null);
-  useEffect(() => {
-    const ask = () => {
-      invoke<Looked>("update_ready", { nowPlease: false })
-        .then((one) => setVersion(one.ready?.version ?? null))
-        .catch(() => setVersion(null));
-    };
-    ask();
-    const again = setInterval(ask, LOOKS_AGAIN);
-    window.addEventListener("focus", ask);
-    return () => {
-      clearInterval(again);
-      window.removeEventListener("focus", ask);
-    };
-  }, []);
-  return version;
 }

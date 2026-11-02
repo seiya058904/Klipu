@@ -128,7 +128,7 @@ fn added_columns(db: &Connection) -> Result<()> {
         db.execute(
             "UPDATE items SET came_at = updated_at
              WHERE came_at IS NULL AND uuid >= ?1 AND uuid < ?2",
-            [crate::legacy::THEIR_MARK, crate::legacy::PAST_THEIR_MARK],
+            ["2x-", "2x."],
         )?;
     }
     Ok(())

@@ -7,7 +7,6 @@ pub mod hash;
 pub mod identity;
 pub mod item;
 pub mod kind;
-pub mod linkunbound;
 pub mod note;
 pub mod paint;
 pub mod paste;

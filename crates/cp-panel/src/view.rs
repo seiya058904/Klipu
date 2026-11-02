@@ -840,8 +840,6 @@ pub fn dress_words(ui: &crate::Panel) {
     words.set_open_it(crate::say::pick("abrir", "open").into());
     words.set_name_it(crate::say::pick("poner nombre", "give it a name").into());
     words.set_name_room(i32::try_from(NAME_ROOM).unwrap_or(i32::MAX));
-    words.set_update_take(crate::say::pick("Actualizar", "Update").into());
-    words.set_update_later(crate::say::pick("Ahora no", "Not now").into());
     words.set_copy_it(crate::say::pick("copiar sin pegar", "copy without pasting").into());
     words.set_pin(crate::say::pick("anclar", "pin").into());
     words.set_unpin(crate::say::pick("desanclar", "unpin").into());

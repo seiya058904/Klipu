@@ -2,9 +2,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useRef, useState } from "react";
-import { caps, onMac, useKept } from "../core";
+import { caps, useKept } from "../core";
 import { inEnglish, sized, t } from "../locales";
-import panda from "../panda.svg";
+import mark from "../mark.svg";
 
 export const LASTS_MS = 10000;
 
@@ -21,7 +21,7 @@ function leave() {
 }
 
 function counted(value: number) {
-  return value.toLocaleString(inEnglish() ? "en" : "es");
+  return value.toLocaleString(inEnglish() ? "en" : "zh-CN");
 }
 
 export default function Ready() {
@@ -29,7 +29,6 @@ export default function Ready() {
   const [glance, setGlance] = useState<Glance | "unread" | null>(null);
   const [held, setHeld] = useState(false);
   const left = useRef(LASTS_MS);
-  const mac = onMac();
 
   useEffect(() => {
     invoke<Glance>("glance", { since: midnight() })
@@ -79,7 +78,7 @@ export default function Ready() {
   return (
     <div className={`ready${held ? " held" : ""}`}>
       <div className="ready-top">
-        <img className="ready-mark" src={panda} alt="" />
+        <img className="ready-mark" src={mark} alt="" />
         <div className="ready-who">
           <b>{t("readyTitle")}</b>
           <span>
@@ -135,9 +134,9 @@ export default function Ready() {
       )}
       <div className="ready-foot">
         <span>{t("readyOpenWith")}</span>
-        {caps(kept.shortcut, mac).map((one, index) => (
+        {caps(kept.shortcut).map((one, index) => (
           <span key={one} className="ready-cap">
-            {index > 0 && !mac && <span className="ready-plus">+</span>}
+            {index > 0 && <span className="ready-plus">+</span>}
             <kbd>{one}</kbd>
           </span>
         ))}

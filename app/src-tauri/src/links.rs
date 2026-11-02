@@ -1,25 +1,16 @@
-fn opened(url: &str) -> bool {
-    #[cfg(windows)]
-    {
-        cp_win_sys::files::open_link(url)
-    }
+fn opens_the_web(url: &str) -> bool {
+    let said = url.trim_start();
+    let Some((scheme, rest)) = said.split_once("://") else {
+        return false;
+    };
+    !rest.is_empty()
+        && (scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https"))
 }
 
 #[tauri::command(async)]
 pub fn open_web(url: String) -> Result<(), String> {
-    if !cp_core::linkunbound::opens_the_web(&url) {
-        return Err(url);
-    }
-    if opened(&url) {
+    if opens_the_web(&url) && cp_win_sys::files::open_link(&url) {
         return Ok(());
     }
     Err(url)
-}
-
-#[tauri::command(async)]
-pub fn linkunbound_here() -> bool {
-    #[cfg(windows)]
-    {
-        cp_win_sys::files::linkunbound_here()
-    }
 }

@@ -1,21 +1,18 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useRef } from "react";
-import { onMac } from "../core";
 import { t } from "../locales";
 
 export default function Chrome({ knobs = true }: { knobs?: boolean }) {
   const held = useRef<ReturnType<typeof getCurrentWindow>>(null);
   held.current ??= getCurrentWindow();
   const win = held.current;
-  const mac = onMac();
-  const drawn = knobs && !mac;
 
   return (
-    <div className={`chrome${mac ? " mac" : ""}${knobs ? "" : " bare"}`} data-tauri-drag-region>
+    <div className={`chrome${knobs ? "" : " bare"}`} data-tauri-drag-region>
       <span className="chrome-who" data-tauri-drag-region>
-        CoPanda
+        Klipu
       </span>
-      {drawn && (
+      {knobs && (
         <div className="chrome-does">
           <button
             type="button"

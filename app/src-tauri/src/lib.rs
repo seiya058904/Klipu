@@ -9,7 +9,6 @@ mod report;
 mod reviving;
 mod settings;
 mod tray;
-mod update;
 mod waking;
 mod welcome;
 
@@ -22,7 +21,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             settings::settings,
@@ -30,11 +28,9 @@ pub fn run() {
             settings::looks,
             settings::where_it_lives,
             settings::storage_used,
-            settings::former,
             settings::notices,
             settings::licences,
             links::open_web,
-            links::linkunbound_here,
             waking::waking,
             waking::wake,
             keys::keys,
@@ -42,13 +38,8 @@ pub fn run() {
             backup::save_backup,
             backup::peek_backup,
             backup::load_backup,
-            backup::bring_former,
-            backup::drop_former,
             report::save_report,
             report::open_log,
-            update::update_ready,
-            update::install_route,
-            update::update_install,
             empty,
             trouble,
             relabel,
@@ -58,7 +49,6 @@ pub fn run() {
             ready::glance,
             ready::show_panel
         ])
-        .manage(update::Installing::default())
         .manage(backup::Crossing::default())
         .setup(|app| {
             let fresh = settings::settle();
@@ -74,7 +64,6 @@ pub fn run() {
             panel::raise(app.handle());
             keys::raise(app.handle(), &kept.unwrap_or_else(keys::unread));
             welcome::raise(app.handle(), fresh);
-            update::keep_looking();
             Ok(())
         })
         .build(tauri::generate_context!())

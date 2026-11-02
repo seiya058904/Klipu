@@ -57,14 +57,6 @@ mod there {
         let Ok(exe) = std::env::current_exe() else {
             return Waking::none();
         };
-        if packaged(&exe) {
-            return Waking {
-                offered: true,
-                wakes: false,
-                theirs: false,
-                managed: true,
-            };
-        }
         let ours = written().is_some_and(|said| ours(&said, &exe));
         let approved = approved();
         Waking {
@@ -77,11 +69,6 @@ mod there {
 
     pub fn wake(wanted: bool) -> std::io::Result<()> {
         let exe = std::env::current_exe()?;
-        if packaged(&exe) {
-            return Err(std::io::Error::other(
-                "Windows manages the startup of the installed app in Settings > Apps > Startup",
-            ));
-        }
         if written().is_some_and(|said| !ours(&said, &exe)) {
             return Err(std::io::Error::other(
                 "another program holds the startup entry under CopyPaste's name",
@@ -125,10 +112,6 @@ mod there {
             .ok()
             .and_then(|key| key.get_raw_value(NAME).ok());
         read.is_none_or(|held| approves(&held.bytes))
-    }
-
-    pub fn packaged(exe: &Path) -> bool {
-        crate::update::chosen(Some(exe)) == crate::update::Route::Store
     }
 
     pub fn approves(bytes: &[u8]) -> bool {

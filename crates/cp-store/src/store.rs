@@ -957,22 +957,6 @@ impl Store {
             .is_some())
     }
 
-    pub fn came_from_the_former(&self) -> Result<crate::legacy::Came> {
-        let (count, still, when) = self.db.query_row(
-            "SELECT COUNT(*), SUM(deleted_at IS NULL), MIN(came_at) FROM items
-             WHERE came_at IS NOT NULL",
-            [],
-            |row| {
-                Ok((
-                    row.get(0)?,
-                    row.get::<_, Option<i64>>(1)?.unwrap_or(0),
-                    row.get::<_, Option<i64>>(2)?,
-                ))
-            },
-        )?;
-        Ok(crate::legacy::Came { count, still, when })
-    }
-
     pub fn count(&self) -> Result<i64> {
         Ok(self.db.query_row(
             "SELECT (SELECT COUNT(*) FROM items)

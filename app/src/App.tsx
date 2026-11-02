@@ -1,7 +1,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
-import { useKept, useTrouble, useWaiting } from "./core";
-import { fill, panelTroubleSaid, t } from "./locales";
+import { useKept, useTrouble } from "./core";
+import { panelTroubleSaid, t } from "./locales";
 import About from "./ui/About";
 import Appearance from "./ui/Appearance";
 import Backup from "./ui/Backup";
@@ -30,7 +30,6 @@ export default function App() {
   const [where, setWhere] = useState<Where>(() => landing(window.location.hash));
   const { kept, trouble, change, look } = useKept();
   const panelTrouble = useTrouble();
-  const waiting = useWaiting();
 
   useEffect(() => {
     const asked = listen<string>("rail", (event) => {
@@ -63,17 +62,6 @@ export default function App() {
             );
           })}
           <span className="spacer" />
-          {waiting && where !== "about" && (
-            <button
-              type="button"
-              className="waiting"
-              aria-label={`${t("railAbout")} · ${t("updateWaiting")}`}
-              onClick={() => setWhere("about")}
-            >
-              <i />
-              {fill("updateGoTo", waiting)}
-            </button>
-          )}
           <button type="button" aria-current={where === "about"} onClick={() => setWhere("about")}>
             <Info />
             {t("railAbout")}

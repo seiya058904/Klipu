@@ -196,38 +196,6 @@ fn trimmed(said: Option<String>) -> Option<String> {
 }
 
 #[must_use]
-pub fn unlimited_for_the_former(config: &Config) -> Option<Config> {
-    (config.images_quota_mb == Some(IMAGES_QUOTA_MB)).then(|| Config {
-        images_quota_mb: None,
-        ..config.clone()
-    })
-}
-
-pub fn lift_for_the_former(path: &Path) -> Result<Option<Config>, Error> {
-    let Some(lifted) = unlimited_for_the_former(&read(path)?) else {
-        return Ok(None);
-    };
-    write(path, &lifted)?;
-    Ok(Some(lifted))
-}
-
-#[must_use]
-pub fn limited_again(config: &Config) -> Option<Config> {
-    config.images_quota_mb.is_none().then(|| Config {
-        images_quota_mb: Some(IMAGES_QUOTA_MB),
-        ..config.clone()
-    })
-}
-
-pub fn put_back_after_the_former(path: &Path) -> Result<Option<Config>, Error> {
-    let Some(limited) = limited_again(&read(path)?) else {
-        return Ok(None);
-    };
-    write(path, &limited)?;
-    Ok(Some(limited))
-}
-
-#[must_use]
 pub fn at(dir: &Path) -> PathBuf {
     dir.join(FILE)
 }

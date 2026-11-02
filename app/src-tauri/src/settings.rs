@@ -16,31 +16,11 @@ pub fn licences() -> &'static str {
     LICENCES
 }
 
-pub fn former_folder() -> Option<PathBuf> {
-    #[cfg(windows)]
-    {
-        cp_win_sys::paths::legacy_dir()
-    }
-}
-
 pub fn folder() -> Option<PathBuf> {
     #[cfg(windows)]
     {
         cp_win_sys::paths::data_dir()
     }
-}
-
-pub fn policy() -> cp_store::Policy {
-    let Some(path) = folder()
-        .map(|dir| cp_config::at(&dir))
-        .filter(|at| at.exists())
-    else {
-        return cp_store::Policy::default();
-    };
-    let Ok(kept) = cp_config::read(&path) else {
-        return cp_store::Policy::default();
-    };
-    cp_store::Policy::keeping(kept.keeps_days, kept.images_quota_mb)
 }
 
 pub fn nowhere() -> String {
@@ -164,81 +144,4 @@ pub fn storage_used() -> Result<i64, String> {
 pub fn where_it_lives() -> Result<String, String> {
     let dir = folder().ok_or_else(nowhere)?;
     Ok(dir.to_string_lossy().into_owned())
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Former {
-    path: String,
-    bytes: u64,
-    items: i64,
-    pictures: i64,
-    pictures_gone: i64,
-    pinned: i64,
-    labelled: i64,
-    with_styles: i64,
-    beyond_keep: i64,
-    came: Option<i64>,
-    came_still: i64,
-    came_at: Option<i64>,
-    unreadable: Option<String>,
-}
-
-fn came_over() -> Option<cp_store::legacy::Came> {
-    let at = history().ok()?;
-    for wait in [0u64, 150, 400] {
-        if wait > 0 {
-            std::thread::sleep(std::time::Duration::from_millis(wait));
-        }
-        if let Ok(store) = cp_store::Store::open(&at)
-            && let Ok(came) = store.came_from_the_former()
-        {
-            return Some(came);
-        }
-    }
-    crate::note::note("the history was busy, so whether the 2.x ever crossed is unknown");
-    None
-}
-
-#[tauri::command(async)]
-pub fn former(at: i64) -> Result<Option<Former>, String> {
-    let db = former_folder().ok_or_else(nowhere)?.join("clipboard.db");
-    let weighed = match std::fs::metadata(&db) {
-        Ok(weighed) => weighed,
-        Err(why) if why.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(why) => return Err(why.to_string()),
-    };
-    let mut former = Former {
-        path: db.to_string_lossy().into_owned(),
-        bytes: weighed.len(),
-        items: 0,
-        pictures: 0,
-        pictures_gone: 0,
-        pinned: 0,
-        labelled: 0,
-        with_styles: 0,
-        beyond_keep: 0,
-        came: None,
-        came_still: 0,
-        came_at: None,
-        unreadable: None,
-    };
-    if let Some(came) = came_over() {
-        former.came = Some(came.count);
-        former.came_still = came.still;
-        former.came_at = came.when;
-    }
-    match cp_store::legacy::look(&db, at, policy().keep_for) {
-        Ok(looked) => {
-            former.items = looked.items;
-            former.pictures = looked.pictures;
-            former.pictures_gone = looked.pictures_gone;
-            former.pinned = looked.pinned;
-            former.labelled = looked.labelled;
-            former.with_styles = looked.with_styles;
-            former.beyond_keep = looked.beyond_keep;
-        }
-        Err(why) => former.unreadable = Some(why.to_string()),
-    }
-    Ok(Some(former))
 }

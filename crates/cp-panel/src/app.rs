@@ -291,28 +291,6 @@ impl App {
             step_aside(&ui, &state, Leaving::Away);
             crate::note::tell("settings");
         });
-        let (ui, state) = (self.ui.clone(), self.state.clone());
-        panel.on_update_taken(move || {
-            let Some(ui) = ui.upgrade() else {
-                return;
-            };
-            ui.set_sheet_open(false);
-            step_aside(&ui, &state, Leaving::Away);
-            crate::note::tell("update");
-        });
-        let ui = self.ui.clone();
-        panel.on_update_put_away(move || {
-            let Some(ui) = ui.upgrade() else {
-                return;
-            };
-            if let Some(dir) = here::data_dir()
-                && let Some(version) = crate::newer::waiting_in(&dir, env!("CARGO_PKG_VERSION"))
-                && let Err(why) = crate::newer::put_away_in(&dir, &version)
-            {
-                note(&format!("the update could not be put away: {why}"));
-            }
-            ui.set_update_line(Default::default());
-        });
         let ui = self.ui.clone();
         panel.on_nudge(move |dx, dy| {
             if let Some(ui) = ui.upgrade() {
@@ -639,7 +617,6 @@ impl App {
                 let kept = state.borrow().kept.get();
                 state.borrow_mut().metrics.shut_lines = kept.look.density.shut_lines();
                 dress_theme(ui.global::<crate::Theme>(), kept);
-                ui.set_update_line(newer_line().into());
                 refresh(&ui, &state);
                 back_to_the_newest(&ui, &state);
                 watch_leaving(&ui, &state);
@@ -1264,13 +1241,6 @@ pub fn dress_theme(theme: crate::Theme<'_>, kept: crate::kept::Kept) {
     theme.set_font(look.font.into());
     theme.set_mono_font(look.mono.into());
     theme.set_zoom(look.size.zoom());
-}
-
-fn newer_line() -> String {
-    here::data_dir()
-        .and_then(|dir| crate::newer::waiting_in(&dir, env!("CARGO_PKG_VERSION")))
-        .map(|version| crate::newer::line_of(&version, crate::say::in_english()))
-        .unwrap_or_default()
 }
 
 fn opaque(rgb: u32) -> slint::Color {

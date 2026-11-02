@@ -1,75 +1,18 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
-import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
-import { licences, notices, type Route, useUpdate } from "../core";
-import linkunbound from "../linkunbound.svg";
+import { licences, notices } from "../core";
 import { fill, t } from "../locales";
 import { composed } from "../markdown";
-import panda from "../panda.svg";
-import tisty from "../tisty.svg";
+import mark from "../mark.svg";
 import { CloudOff, Code, Gift, Info, Key } from "./Icons";
 
-const STARS = "https://github.com/rgdevment/CopyPaste";
-const SPONSOR = "https://github.com/sponsors/rgdevment";
-const COFFEE = "https://buymeacoffee.com/rgdevment";
-const ALTERNATIVE = "https://alternativeto.net/software/copypaste/about/";
-const RATING = "ms-windows-store://review/?ProductId=9NBJRZF3K856";
-const PRIVACY = "https://github.com/rgdevment/CopyPaste/blob/main/PRIVACY.md";
+const REPOSITORY = "https://github.com/seiya058904/Klipu";
+const UPSTREAM = "https://github.com/rgdevment/CopyPaste";
+const PRIVACY = `${REPOSITORY}/blob/main/PRIVACY.md`;
 
-function Newer() {
-  const { seen, busy, trouble, look, install } = useUpdate();
-  const store = seen?.route === "store";
-  const ready = seen?.ready ?? null;
-  const looked = !trouble && (seen?.looked ?? false);
-
-  const says = ready
-    ? fill("updateThere", ready.version)
-    : store
-      ? t("updateStore")
-      : looked
-        ? t("updateNone")
-        : t("updateLook");
-
-  let why = t("updateWhen");
-  if (ready) {
-    why = ready.installs ? t("updateTake") : t("updateMove");
-  }
-
-  return (
-    <div className="newer">
-      <span className={looked && !ready ? "pip ok" : "pip"} />
-      <span className="grow">
-        <b>{says}</b>
-        <span>{trouble ?? (store ? t("updateStoreWhy") : why)}</span>
-      </span>
-      {ready?.installs ? (
-        <button type="button" className="strong" disabled={busy} onClick={install}>
-          {busy ? t("updateGetting") : t("updateDo")}
-        </button>
-      ) : store ? null : (
-        <button type="button" className="mild" disabled={busy} onClick={() => look(true)}>
-          {busy ? t("busy") : t("updateLook")}
-        </button>
-      )}
-    </div>
-  );
-}
-
-const TOOLS = [
-  {
-    name: "Tisty",
-    icon: tisty,
-    says: "toolTisty",
-    at: "https://www.tisty.app/",
-  },
-  {
-    name: "LinkUnbound",
-    icon: linkunbound,
-    says: "toolLinkUnbound",
-    at: "https://www.linkunbound.app/",
-  },
-];
+export const LINKS = [REPOSITORY, UPSTREAM, PRIVACY];
 
 function Notices({
   text,
@@ -101,13 +44,9 @@ function Notices({
   return <section ref={box} className="notices" aria-label={label} />;
 }
 
-export const LINKS = [STARS, SPONSOR, COFFEE, ALTERNATIVE, RATING, PRIVACY];
-
 export default function About() {
   const [trouble, setTrouble] = useState<string | null>(null);
   const [version, setVersion] = useState<string | null>(null);
-  const [unbound, setUnbound] = useState(false);
-  const [fromStore, setFromStore] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
   const [texts, setTexts] = useState<string | null>(null);
   const [report, setReport] = useState<string | null>(null);
@@ -119,25 +58,9 @@ export default function About() {
       .catch(() => setVersion(null));
   }, []);
 
-  useEffect(() => {
-    invoke<Route>("install_route")
-      .then((route) => setFromStore(route === "store"))
-      .catch(() => setFromStore(false));
-  }, []);
-
-  useEffect(() => {
-    invoke<boolean>("linkunbound_here")
-      .then(setUnbound)
-      .catch(() => setUnbound(false));
-  }, []);
-
   const go = (where: string) => {
     setTrouble(null);
-    const asked =
-      where.startsWith("http://") || where.startsWith("https://")
-        ? invoke("open_web", { url: where })
-        : openUrl(where);
-    asked.catch(() => setTrouble(fill("linkRefused", where)));
+    invoke("open_web", { url: where }).catch(() => setTrouble(fill("linkRefused", where)));
   };
 
   const saveReport = () => {
@@ -161,9 +84,9 @@ export default function About() {
       {trouble && <p className="alarm">{trouble}</p>}
 
       <div className="brow">
-        <img className="mark" src={panda} alt="" />
+        <img className="mark" src={mark} alt="" />
         <span>
-          <h1>CoPanda</h1>
+          <h1>Klipu</h1>
           <span className="line2">
             <span>{version ?? "—"}</span>
             <i />
@@ -179,6 +102,7 @@ export default function About() {
         </p>
         <p>{t("aboutWhat")}</p>
         <p>{t("aboutPrivacy")}</p>
+        <p className="quiet">{t("aboutOrigin")}</p>
         <button
           type="button"
           className="welcome-link"
@@ -207,78 +131,6 @@ export default function About() {
           </span>
         </div>
       </div>
-
-      <Newer />
-
-      <div className="rule">{t("supportTitle")}</div>
-      <p className="quiet">{t("supportWhy")}</p>
-      <div className="gives" style={{ marginTop: 10 }}>
-        <button type="button" className="give wide" onClick={() => go(STARS)}>
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              fill="#e3b341"
-              d="M8 1.2l2.1 4.3 4.7.7-3.4 3.3.8 4.7L8 12l-4.2 2.2.8-4.7L1.2 6.2l4.7-.7L8 1.2z"
-            />
-          </svg>
-          <span>
-            <b>{t("supportStar")}</b>
-            <span>github.com/rgdevment/CopyPaste</span>
-          </span>
-        </button>
-        {fromStore && (
-          <button type="button" className="give wide" onClick={() => go(RATING)}>
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path
-                fill="#0078d4"
-                d="M2 3h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6l-4 3V4a1 1 0 0 1 1-1Z"
-              />
-            </svg>
-            <span>
-              <b>{t("supportRate")}</b>
-              <span>Microsoft Store</span>
-            </span>
-          </button>
-        )}
-        <button type="button" className="give" onClick={() => go(SPONSOR)}>
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              fill="#db61a2"
-              d="M8 14.25 6.84 13.2C2.72 9.47 0 7.01 0 4.5 0 2.42 1.57 1 3.5 1c1.1 0 2.16.51 2.84 1.32h1.32C8.34 1.51 9.4 1 10.5 1 12.43 1 14 2.42 14 4.5c0 2.51-2.72 4.97-6.84 8.7L8 14.25Z"
-            />
-          </svg>
-          <span>
-            <b>{t("supportSponsor")}</b>
-            <span>github.com/sponsors</span>
-          </span>
-        </button>
-        <button type="button" className="give" onClick={() => go(COFFEE)}>
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path
-              fill="#c8892a"
-              d="M2 5h9v5a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5Zm10 0h1.5A2.5 2.5 0 0 1 16 7.5 2.5 2.5 0 0 1 13.5 10H12V5ZM2 14h9v1H2v-1Z"
-            />
-          </svg>
-          <span>
-            <b>{t("supportCoffee")}</b>
-            <span>buymeacoffee.com</span>
-          </span>
-        </button>
-      </div>
-
-      <div className="rule">{t("otherTools")}</div>
-      {TOOLS.map((tool) => (
-        <button key={tool.name} type="button" className="tool" onClick={() => go(tool.at)}>
-          <img className="ico" src={tool.icon} alt="" />
-          <span style={{ flex: 1, minWidth: 0 }}>
-            <b>{tool.name}</b>
-            <span>
-              {unbound && tool.name === "LinkUnbound"
-                ? t("toolLinkUnboundHere")
-                : t(tool.says as "toolTisty")}
-            </span>
-          </span>
-        </button>
-      ))}
 
       <div className="trouble">
         <div className="rule" style={{ marginTop: 0 }}>
@@ -313,11 +165,11 @@ export default function About() {
       </div>
 
       <div className="links">
-        <button type="button" onClick={() => go(STARS)}>
+        <button type="button" onClick={() => go(REPOSITORY)}>
           {t("aboutRepo")}
         </button>
-        <button type="button" onClick={() => go(ALTERNATIVE)}>
-          AlternativeTo
+        <button type="button" onClick={() => go(UPSTREAM)}>
+          {t("aboutUpstream")}
         </button>
         <button type="button" onClick={() => go(PRIVACY)}>
           {t("aboutPrivacyLink")}

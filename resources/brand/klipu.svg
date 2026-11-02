@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Klipu">
+  <rect x="88" y="10" width="80" height="44" rx="14" fill="#A5B4FC"/>
+  <rect x="24" y="32" width="208" height="208" rx="48" fill="#4338CA"/>
+  <rect x="88" y="26" width="80" height="24" rx="12" fill="#A5B4FC"/>
+  <path d="M94 88V192M170 88l-76 58M120 126l54 66" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

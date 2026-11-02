@@ -78,11 +78,6 @@ fn deleting_overwrites_before_unlinking() {
     );
 }
 
-#[cfg(unix)]
-fn symlink_file(target: &Path, link: &Path) {
-    std::os::unix::fs::symlink(target, link).expect("a link");
-}
-
 const ERROR_PRIVILEGE_NOT_HELD: i32 = 1314;
 
 fn symlink_file(to: &Path, at: &Path) -> bool {

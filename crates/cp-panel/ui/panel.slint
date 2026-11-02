@@ -4,7 +4,6 @@ import { Card, Chip, FormRow } from "types.slint";
 import { Theme } from "theme.slint";
 import { Words } from "words.slint";
 import { Icon, Action, Pill, Tag, CardView, Hue } from "cards.slint";
-import { NewerStrip } from "newer.slint";
 import { Chooser } from "chooser.slint";
 
 export { Card, Chip, FormRow, Theme, Words, Chooser }
@@ -87,9 +86,6 @@ export component Panel inherits Window {
     callback ask-forms(int);
     callback ask-kinds();
     callback ask-settings();
-    in property <string> update-line;
-    callback update-taken();
-    callback update-put-away();
     callback nudge(length, length);
     callback reopened();
     callback to-the-top();
@@ -169,11 +165,6 @@ export component Panel inherits Window {
                 padding-top: 2px;
                 padding-bottom: 8px;
                 spacing: 9px;
-                if root.update-line != "" : NewerStrip {
-                    line: root.update-line;
-                    taken => { root.update-taken(); }
-                    put-away => { root.update-put-away(); }
-                }
                 HorizontalLayout {
                     height: 34px;
                     spacing: 8px;

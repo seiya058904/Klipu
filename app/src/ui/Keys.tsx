@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { asKeys, combination, type Kept, onMac, type Role, sameKeys, useKeys } from "../core";
+import { asKeys, combination, type Kept, type Role, sameKeys, useKeys } from "../core";
 import { panelKeys, t } from "../locales";
 import { Band, Line } from "./Bits";
 
-const FIELD: Record<Role, "shortcut" | "plain-shortcut" | "forms-shortcut"> = {
+const FIELD: Record<Role, "shortcut" | "plain-shortcut"> = {
   panel: "shortcut",
   plain: "plain-shortcut",
-  forms: "forms-shortcut",
 };
 
 const SYSTEM = [
@@ -16,9 +15,6 @@ const SYSTEM = [
   "Ctrl+Insert",
   "Shift+Insert",
   "Shift+Delete",
-  "Cmd+C",
-  "Cmd+X",
-  "Cmd+V",
 ];
 
 export default function Keys({
@@ -28,8 +24,6 @@ export default function Keys({
   kept: Kept;
   change: (what: Partial<Kept>) => Promise<void>;
 }) {
-  const mac = onMac();
-
   return (
     <>
       <h1>{t("railKeys")}</h1>
@@ -39,7 +33,7 @@ export default function Keys({
       <Shortcut which="panel" says={t("keys")} why={t("keysWhy")} kept={kept} change={change} />
 
       <Line says={t("keysAsCopied")} why={t("keysAsCopiedWhy")}>
-        <span className="keys">{asKeys(mac ? "Cmd+V" : "Ctrl+V", mac)}</span>
+        <span className="keys">{asKeys("Ctrl+V")}</span>
       </Line>
 
       <Shortcut
@@ -50,25 +44,15 @@ export default function Keys({
         change={change}
       />
 
-      <Shortcut
-        which="forms"
-        says={t("keysForms")}
-        why={t("keysFormsWhy")}
-        kept={kept}
-        change={change}
-      />
-
       <Band says={t("keysTable")} />
 
       <p className="said-plain">{t("keysTableWhy")}</p>
 
       <table className="bindings">
         <tbody>
-          {panelKeys(mac).map((one) => (
+          {panelKeys().map((one) => (
             <tr key={one.id}>
-              <th scope="row" aria-label={one.said}>
-                {one.keys}
-              </th>
+              <th scope="row">{one.keys}</th>
               <td>{one.does}</td>
             </tr>
           ))}
@@ -103,7 +87,6 @@ function Shortcut({
   const { keys, spare, recheck } = useKeys(said, role);
   const [asking, setAsking] = useState(false);
   const [refused, setRefused] = useState<"keysTwice" | "keysSystem" | null>(null);
-  const mac = onMac();
   const off = said === "";
   const taken = !asking && !off && keys !== null && !keys.bound;
   const take = (one: string) => {
@@ -134,7 +117,7 @@ function Shortcut({
             <span>{t("keysFree")}</span>
             {spare.map((one) => (
               <button key={one} type="button" className="keys spare-one" onClick={() => take(one)}>
-                {asKeys(one, mac)}
+                {asKeys(one)}
               </button>
             ))}
           </div>
@@ -142,7 +125,7 @@ function Shortcut({
       }
     >
       <span className={taken ? "keys taken" : off ? "keys off" : "keys"}>
-        {off ? t("keysOff") : asKeys(said, mac)}
+        {off ? t("keysOff") : asKeys(said)}
       </span>
       <button
         type="button"

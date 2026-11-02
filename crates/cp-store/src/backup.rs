@@ -216,9 +216,7 @@ fn carry(source: &Store, into: &Store, row: &crate::Listed, at: i64) -> Result<b
         pastes: row.paste_count,
         broken: row.broken_since,
         meta: &meta,
-        jobs: row
-            .kind
-            .map_or(nothing, |kind| crate::legacy::jobs_for(kind, true)),
+        jobs: row.kind.map_or(nothing, |kind| jobs_for(kind)),
     };
     let id = into.insert_full(
         &free_name(source, into, row.id, at),
@@ -403,6 +401,18 @@ fn remove(path: &Path) -> Result<()> {
 
 fn weighed(path: &Path) -> u64 {
     std::fs::metadata(path).map_or(0, |it| it.len())
+}
+
+fn jobs_for(kind: cp_core::kind::Kind) -> &'static [&'static str] {
+    match kind {
+        cp_core::kind::Kind::Image => &["thumb", "ocr"],
+        cp_core::kind::Kind::File | cp_core::kind::Kind::Folder
+            if cp_core::thumbnail::THUMBNAILS_FILES =>
+        {
+            &["thumb"]
+        }
+        _ => &[],
+    }
 }
 
 #[cfg(test)]

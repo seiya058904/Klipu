@@ -23,20 +23,9 @@ fn logs() -> PathBuf {
 pub fn open_log(app: tauri::AppHandle) -> Result<(), String> {
     let dir = logs();
     std::fs::create_dir_all(&dir).map_err(|why| why.to_string())?;
-    let dir = seen_outside(dir);
     app.opener()
         .open_path(dir.to_string_lossy(), None::<&str>)
         .map_err(|why| why.to_string())
-}
-
-#[cfg(windows)]
-fn seen_outside(dir: PathBuf) -> PathBuf {
-    if crate::update::route() != crate::update::Route::Store {
-        return dir;
-    }
-    cp_win_sys::paths::in_package(&dir)
-        .filter(|it| it.exists())
-        .unwrap_or(dir)
 }
 
 #[tauri::command(async)]
@@ -67,12 +56,8 @@ pub fn named(stamp: &str) -> String {
 }
 
 fn report(version: &str) -> String {
-    let route = match crate::update::route() {
-        crate::update::Route::Store => "Microsoft Store",
-        crate::update::Route::Download => "download",
-    };
     let mut out = format!(
-        "CoPanda {version}\n{}\n{} {}\ninstalled from: {route}\nwritten: {}\n",
+        "CoPanda {version}\n{}\n{} {}\nwritten: {}\n",
         system(),
         std::env::consts::OS,
         std::env::consts::ARCH,

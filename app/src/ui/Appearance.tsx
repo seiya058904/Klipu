@@ -96,7 +96,7 @@ export default function Appearance({
         </div>
       </Line>
 
-      <Band says={t("bandText")} />
+      <Band says={t("bandCards")} />
 
       <Line says={t("size")} why={t("sizeWhy")}>
         <Segments
@@ -108,32 +108,6 @@ export default function Appearance({
           pick={(one) => change({ "text-size": one })}
         />
       </Line>
-
-      {choices && (
-        <Line says={t("font")} why={t("fontWhy")}>
-          <FontList
-            says={t("font")}
-            system={choices.text}
-            others={choices.texts}
-            chosen={kept.font ?? null}
-            pick={(id) => change({ font: id })}
-          />
-        </Line>
-      )}
-
-      {choices && (
-        <Line says={t("codeFont")} why={t("codeFontWhy")}>
-          <FontList
-            says={t("codeFont")}
-            system={choices.code}
-            others={choices.codes}
-            chosen={kept["code-font"] ?? null}
-            pick={(id) => change({ "code-font": id })}
-          />
-        </Line>
-      )}
-
-      <Band says={t("bandCards")} />
 
       <Line says={t("density")} why={t("densityWhy")}>
         <Segments
@@ -189,42 +163,10 @@ function Segments<T extends string>({
   );
 }
 
-function FontList({
-  says,
-  system,
-  others,
-  chosen,
-  pick,
-}: {
-  says: string;
-  system: { label: string };
-  others: { id: string; label: string }[];
-  chosen: string | null;
-  pick: (id: string | null) => void;
-}) {
-  const known = others.some((one) => one.id === chosen) ? chosen : "";
-  return (
-    <select
-      aria-label={says}
-      value={known ?? ""}
-      onChange={(event) => pick(event.target.value || null)}
-    >
-      <option value="">{`${system.label} · ${t("byDefault")}`}</option>
-      {others.map((one) => (
-        <option key={one.id} value={one.id}>
-          {one.label}
-        </option>
-      ))}
-    </select>
-  );
-}
-
 export function previewStyle(kept: Kept, choices: Choices | null): CSSProperties {
   const size: TextSize = kept["text-size"] ?? "normal";
   const density: Density = kept.density ?? "normal";
   const paint = choices?.accents.find((one) => one.id === (kept.accent ?? "indigo"));
-  const font = choices?.texts.find((one) => one.id === kept.font) ?? choices?.text;
-  const code = choices?.codes.find((one) => one.id === kept["code-font"]) ?? choices?.code;
   return {
     "--zoom": ZOOM[size],
     "--lines": SHUT_LINES[density],
@@ -232,8 +174,6 @@ export function previewStyle(kept: Kept, choices: Choices | null): CSSProperties
     "--dark": paint?.dark,
     "--light-selected": paint?.lightSelected,
     "--dark-selected": paint?.darkSelected,
-    "--look-font": font?.css,
-    "--look-mono": code?.css,
   } as CSSProperties;
 }
 
@@ -257,7 +197,7 @@ function Preview({ kept, choices }: { kept: Kept; choices: Choices | null }) {
         <div className="mock-card lit">
           <div className="mock-head">
             <b className="text">{t("previewKind")}</b>
-            <span>· Notas</span>
+            <span>· 记事本</span>
           </div>
           <p>{t("previewText")}</p>
         </div>

@@ -1,7 +1,6 @@
 pub mod backup;
 pub mod blobs;
 pub mod enrich;
-pub mod legacy;
 pub mod query;
 pub mod recover;
 pub mod schema;

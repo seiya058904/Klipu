@@ -1,5 +1,4 @@
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { type Kept, onMac, PRIVACY_PANE, useTrust, useWaking } from "../core";
+import { type Kept, useWaking } from "../core";
 import { t } from "../locales";
 import { Band, Knob, Line } from "./Bits";
 
@@ -11,7 +10,6 @@ export default function General({
   change: (what: Partial<Kept>) => Promise<void>;
 }) {
   const { waking, trouble, ask } = useWaking();
-  const { trust, asked, ask: askTrust } = useTrust();
 
   return (
     <>
@@ -26,22 +24,20 @@ export default function General({
           onChange={(event) => change({ locale: event.target.value || null })}
         >
           <option value="">{t("tongueTheirs")}</option>
-          <option value="es">Español</option>
+          <option value="zh">简体中文</option>
           <option value="en">English</option>
         </select>
       </Line>
 
       <Band says={t("bandDoes")} />
 
-      {waking?.managed && <Line says={t("wake")} why={t("wakeManaged")} />}
-
-      {waking && !waking.managed && waking.offered && (
+      {waking?.offered && (
         <Line
           says={t("wake")}
           why={t("wakeWhy")}
           more={
             waking.theirs ? (
-              <div className="said">{t(onMac() ? "wakeTheirsMac" : "wakeTheirs")}</div>
+              <div className="said">{t("wakeTheirs")}</div>
             ) : trouble ? (
               <div className="alarm">{trouble}</div>
             ) : null
@@ -53,41 +49,6 @@ export default function General({
             asleep={waking.theirs && !waking.wakes}
             onPress={() => ask(!waking.wakes)}
           />
-        </Line>
-      )}
-
-      {trust?.offered && (
-        <Line
-          says={t("trust")}
-          why={trust.pastes ? t("trustGranted") : t("trustMissing")}
-          more={
-            <>
-              {trust.secureInput && <div className="said">{t("trustSecure")}</div>}
-              {trust.clipboard !== "allowed" && (
-                <div className="said">
-                  {trust.clipboard === "denied" ? t("clipboardDenied") : t("clipboardAsks")}
-                </div>
-              )}
-            </>
-          }
-        >
-          {trust.pastes ? (
-            <Knob on says={t("trust")} asleep onPress={() => {}} />
-          ) : asked ? (
-            <button
-              type="button"
-              className="strong"
-              onClick={() => {
-                void openUrl(PRIVACY_PANE).catch(() => {});
-              }}
-            >
-              {t("trustOpen")}
-            </button>
-          ) : (
-            <button type="button" className="strong" onClick={askTrust}>
-              {t("trustAsk")}
-            </button>
-          )}
         </Line>
       )}
 

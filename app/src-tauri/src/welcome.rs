@@ -2,15 +2,12 @@ use cp_config::Config;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
 
-const NEWS: &str = include_str!("../../src/news.json");
-
 pub const LABEL: &str = "welcome";
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Greeting {
-    Tour { former: bool },
-    News { versions: Vec<String> },
+    Tour,
     Keys,
     Nothing,
 }
@@ -18,63 +15,12 @@ pub enum Greeting {
 #[derive(Default)]
 pub struct Now(Mutex<Option<Greeting>>);
 
-#[derive(serde::Deserialize)]
-struct Told {
-    version: String,
-}
-
-pub fn told() -> Vec<String> {
-    serde_json::from_str::<Vec<Told>>(NEWS)
-        .map(|all| all.into_iter().map(|one| one.version).collect())
-        .unwrap_or_default()
-}
-
-pub fn decide(
-    fresh: bool,
-    former: bool,
-    welcomed: Option<&str>,
-    running: &str,
-    told: &[String],
-) -> Greeting {
+pub fn decide(fresh: bool, welcomed: Option<&str>) -> Greeting {
     let since = welcomed.and_then(|one| semver::Version::parse(one).ok());
-    let Some(since) = since.filter(|_| !fresh) else {
-        return Greeting::Tour { former };
-    };
-    let Ok(now) = semver::Version::parse(running) else {
-        return Greeting::Nothing;
-    };
-    if since >= now {
-        return Greeting::Nothing;
+    if fresh || since.is_none() {
+        return Greeting::Tour;
     }
-    let mut fresh_news: Vec<(semver::Version, &String)> = told
-        .iter()
-        .filter_map(|said| semver::Version::parse(said).ok().map(|one| (one, said)))
-        .filter(|(one, _)| *one <= now && *one > since)
-        .collect();
-    if fresh_news.is_empty() {
-        fresh_news = told
-            .iter()
-            .filter_map(|said| semver::Version::parse(said).ok().map(|one| (one, said)))
-            .filter(|(one, _)| is_minor_of(one, &now))
-            .collect();
-    }
-    fresh_news.sort_by(|a, b| b.0.cmp(&a.0));
-    fresh_news.dedup_by(|a, b| a.0 == b.0);
-    if fresh_news.is_empty() {
-        return Greeting::Nothing;
-    }
-    Greeting::News {
-        versions: fresh_news
-            .into_iter()
-            .map(|(_, said)| said.clone())
-            .collect(),
-    }
-}
-
-fn is_minor_of(one: &semver::Version, patch: &semver::Version) -> bool {
-    patch.patch > 0
-        && patch.pre.is_empty()
-        && *one == semver::Version::new(patch.major, patch.minor, 0)
+    Greeting::Nothing
 }
 
 pub fn behind(welcomed: Option<&str>, running: &str) -> bool {
@@ -94,9 +40,7 @@ pub fn raise<R: Runtime>(app: &AppHandle<R>, fresh: bool) {
     }
     let welcomed = kept.as_ref().and_then(|one| one.welcomed.clone());
     let running = app.package_info().version.to_string();
-    let former =
-        crate::settings::former_folder().is_some_and(|dir| dir.join("clipboard.db").exists());
-    let asked = decide(fresh, former, welcomed.as_deref(), &running, &told());
+    let asked = decide(fresh, welcomed.as_deref());
     let quiet = asked == Greeting::Nothing;
     app.manage(Now(Mutex::new(Some(asked))));
     if !quiet {
@@ -213,7 +157,7 @@ pub fn greeting(state: tauri::State<'_, Now>) -> Greeting {
 
 #[tauri::command]
 pub async fn tour(app: AppHandle) {
-    let wanted = Greeting::Tour { former: false };
+    let wanted = Greeting::Tour;
     hold(&app, wanted.clone());
     if app.get_webview_window(LABEL).is_some() {
         let _ = app.emit_to(LABEL, "greeting", wanted);
