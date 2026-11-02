@@ -207,8 +207,11 @@ function Preview({ kept, choices }: { kept: Kept; choices: Choices | null }) {
             <span>· Terminal</span>
             <em>{t("previewAge")}</em>
           </div>
-          <code>{lines > 1 ? 'git commit -m "release"
-git push' : 'git commit -m "release"'}</code>
+          <code>
+            {lines > 1
+              ? 'git commit -m "release"' + String.fromCharCode(10) + "git push"
+              : 'git commit -m "release"'}
+          </code>
         </div>
       </div>
     </figure>

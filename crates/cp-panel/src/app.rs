@@ -887,7 +887,7 @@ pub fn busy() -> &'static str {
     if crate::here::read_stuck() {
         return crate::say::pick(
             "有应用在剪贴板操作中无响应，请重启 Klipu",
-            "an app stopped answering about what it copied; restart CoPanda",
+            "an app stopped answering about what it copied; restart Klipu",
         );
     }
     crate::say::pick(

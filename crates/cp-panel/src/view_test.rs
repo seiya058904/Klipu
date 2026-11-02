@@ -1,6 +1,5 @@
 use super::*;
 
-const TOKEN: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjbG91ZGZsYXJlIiwic3ViIjoicm9kcmlnbyIsImV4cCI6MTc5MDk1MjkxNn0.firma";
 use cp_core::search::{Excerpt, Segment};
 use cp_store::{FoundIn, Snippet};
 
