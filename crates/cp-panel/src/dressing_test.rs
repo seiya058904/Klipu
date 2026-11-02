@@ -228,7 +228,7 @@ fn quitting_takes_the_path_off_only_while_it_is_still_on() {
 #[test]
 fn starting_listens_for_windows_where_the_system_can_tell() {
     let dressing = Dressing::start(Rc::new(Shelf::default()), Arc::new(Mutex::new(None)));
-    assert_eq!(dressing.listening(), cfg!(target_os = "windows"));
+    assert!(dressing.listening());
 }
 
 #[test]

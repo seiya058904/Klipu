@@ -98,14 +98,14 @@ fn a_closed_card_shows_one_two_or_three_lines() {
 #[test]
 fn only_the_fonts_on_disk_are_offered() {
     let dir = Path::new("/fonts");
-    let only_avenir = |path: &Path| path.ends_with("Avenir Next.ttc");
-    let shown = present(MAC.texts, dir, &only_avenir);
+    let only_calibri = |path: &Path| path.ends_with("calibri.ttf");
+    let shown = present(WINDOWS.texts, dir, &only_calibri);
     assert_eq!(
         shown.iter().map(|one| one.id).collect::<Vec<_>>(),
-        ["avenir-next"]
+        ["calibri"]
     );
-    let offered = choices(&MAC, dir, &only_avenir);
-    assert_eq!(offered.text.label, "SF Pro");
+    let offered = choices(&WINDOWS, dir, &only_calibri);
+    assert_eq!(offered.text.label, "Segoe UI");
     assert_eq!(offered.texts.len(), 1);
     assert!(offered.codes.is_empty());
     assert_eq!(offered.accents.len(), Accent::ALL.len());
@@ -121,16 +121,16 @@ fn a_font_that_is_missing_or_unknown_falls_back_to_the_system_one() {
     let all = |_: &Path| true;
     let none = |_: &Path| false;
     assert_eq!(
-        family_of(Some("avenir-next"), MAC.text, MAC.texts, dir, &all),
-        "Avenir Next"
+        family_of(Some("calibri"), WINDOWS.text, WINDOWS.texts, dir, &all),
+        "Calibri"
     );
     assert_eq!(
-        family_of(Some("avenir-next"), MAC.text, MAC.texts, dir, &none),
-        "System Font"
+        family_of(Some("calibri"), WINDOWS.text, WINDOWS.texts, dir, &none),
+        "Segoe UI"
     );
     assert_eq!(
-        family_of(Some("comic"), MAC.text, MAC.texts, dir, &all),
-        "System Font"
+        family_of(Some("comic"), WINDOWS.text, WINDOWS.texts, dir, &all),
+        "Segoe UI"
     );
     assert_eq!(
         family_of(None, WINDOWS.code, WINDOWS.codes, dir, &all),
@@ -151,13 +151,8 @@ fn a_font_that_is_missing_or_unknown_falls_back_to_the_system_one() {
 #[test]
 fn the_fonts_offered_are_those_of_the_system_it_runs_on() {
     let here = fonts_here();
-    if cfg!(target_os = "macos") {
-        assert_eq!(here, MAC);
-        assert_eq!(fonts_dir_here(), Path::new(MAC_DIR));
-    } else {
-        assert_eq!(here, WINDOWS);
-        assert!(fonts_dir_here().ends_with("Fonts"));
-    }
+    assert_eq!(here, WINDOWS);
+    assert!(fonts_dir_here().ends_with("Fonts"));
     let offered = choices_here();
     assert_eq!(offered.text.label, here.text.label);
 }

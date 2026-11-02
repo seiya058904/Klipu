@@ -679,7 +679,7 @@ export component CardView inherits Rectangle {
                 spacing: 6px;
                 KeyChip { keys: "⏎"; says: Words.paste-it; on: true; pressed => { root.paste(card.id); } }
                 KeyChip { keys: "⇧⏎"; says: Words.paste-plain; pressed => { root.plain(card.id); } }
-                KeyChip { keys: Theme.apple ? "⌥⏎" : "Alt ⏎"; says: Words.paste-as-short; pressed => { root.forms(card.id); } }
+                KeyChip { keys: "Alt ⏎"; says: Words.paste-as-short; pressed => { root.forms(card.id); } }
                 Rectangle { horizontal-stretch: 1; }
             }
         }

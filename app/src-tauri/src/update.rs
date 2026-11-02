@@ -186,14 +186,7 @@ pub fn target_for(arch: &str, translated: bool) -> Option<&'static str> {
 }
 
 fn translated() -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        cp_mac_sys::translation::translated()
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        false
-    }
+    { false }
 }
 
 pub fn feeds_for(version: &str) -> Vec<&'static str> {

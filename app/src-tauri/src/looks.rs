@@ -14,12 +14,7 @@ fn chosen() -> Option<Theme> {
 }
 
 fn system_is_light() -> bool {
-    #[cfg(target_os = "macos")]
-    return cp_mac_sys::theme::wants_light().unwrap_or(true);
-    #[cfg(target_os = "windows")]
-    return cp_win_sys::theme::wants_light().unwrap_or(true);
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    true
+    cp_win_sys::theme::wants_light().unwrap_or(true)
 }
 
 fn ground(chosen: Option<Theme>) -> Color {

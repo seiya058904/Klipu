@@ -1,6 +1,4 @@
 mod backup;
-#[cfg(any(target_os = "macos", test))]
-mod bundle;
 mod keys;
 mod links;
 mod looks;
@@ -11,17 +9,12 @@ mod report;
 mod reviving;
 mod settings;
 mod tray;
-mod trust;
 mod update;
 mod waking;
 mod welcome;
 
 pub fn run() {
     note::catch_panics();
-    #[cfg(target_os = "macos")]
-    if bundle::settle() {
-        return;
-    }
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             welcome::reopened(app);
@@ -46,8 +39,6 @@ pub fn run() {
             waking::wake,
             keys::keys,
             keys::spare,
-            trust::trust,
-            trust::ask_trust,
             backup::save_backup,
             backup::peek_backup,
             backup::load_backup,
@@ -70,15 +61,9 @@ pub fn run() {
         .manage(update::Installing::default())
         .manage(backup::Crossing::default())
         .setup(|app| {
-            #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let fresh = settings::settle();
             let kept = settings::settings().ok();
             let spanish = tray::spanish(kept.as_ref().and_then(|one| one.locale.as_deref()));
-            #[cfg(target_os = "macos")]
-            if let Err(why) = tray::settle_menu(app.handle()) {
-                note::note(&format!("the menu kept its quit key: {why}"));
-            }
             if tray::raise(app.handle(), spanish).is_none() {
                 tray::surface(app.handle());
             }
@@ -104,11 +89,6 @@ pub fn run() {
             event: tauri::WindowEvent::ThemeChanged(_),
             ..
         } => looks::wear(app),
-        #[cfg(target_os = "macos")]
-        tauri::RunEvent::Reopen {
-            has_visible_windows: false,
-            ..
-        } => welcome::reopened(app),
         _ => {}
     });
 }

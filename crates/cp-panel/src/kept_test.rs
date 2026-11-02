@@ -99,22 +99,22 @@ fn the_look_chosen_reaches_the_panel_and_a_missing_font_does_not() {
         text_size: cp_config::TextSize::Larger,
         density: cp_config::Density::Comfortable,
         accent: cp_config::Accent::Teal,
-        font: Some("avenir-next".into()),
-        code_font: Some("sf-mono".into()),
+        font: Some("calibri".into()),
+        code_font: Some("cascadia-mono".into()),
         ..cp_config::Config::default()
     };
     let dir = std::path::Path::new("/fonts");
     let look = look_of(
         &chosen,
-        &cp_config::look::MAC,
+        &cp_config::look::WINDOWS,
         dir,
-        &|path: &std::path::Path| path.ends_with("Avenir Next.ttc"),
+        &|path: &std::path::Path| path.ends_with("calibri.ttf"),
     );
     assert_eq!(look.size, cp_config::TextSize::Larger);
     assert_eq!(look.density, cp_config::Density::Comfortable);
     assert_eq!(look.accent, cp_config::Accent::Teal);
-    assert_eq!(look.font, "Avenir Next");
-    assert_eq!(look.mono, "Menlo");
+    assert_eq!(look.font, "Calibri");
+    assert_eq!(look.mono, "Consolas");
 }
 
 #[test]

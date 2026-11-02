@@ -1,8 +1,7 @@
 export global Theme {
     in-out property <bool> light: false;
-    out property <bool> apple: Platform.os == OperatingSystemType.macos;
-    in-out property <string> font: apple ? "System Font" : "Segoe UI";
-    in-out property <string> mono-font: apple ? "Menlo" : "Consolas";
+    in-out property <string> font: "Segoe UI";
+    in-out property <string> mono-font: "Consolas";
     in-out property <float> zoom: 1;
     in-out property <color> panel: light ? #F7F8FB : #1A1D2B;
     out property <color> panel-border: light ? #DCDEE8 : #262A3C;
@@ -31,7 +30,7 @@ export global Theme {
     out property <color> alert-back: light ? #FDE9B5 : #46351C;
     out property <color> alert-ink: light ? #7A4E07 : #FCD34D;
     out property <color> scrim: #000000A6;
-    out property <length> radius: apple ? 0px : 8px;
+    out property <length> radius: 8px;
     out property <length> radius-card: 10px;
     out property <length> radius-control: 8px;
     out property <length> radius-inset: 6px;

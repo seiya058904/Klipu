@@ -159,43 +159,6 @@ pub struct Fonts {
     pub codes: &'static [Font],
 }
 
-pub const MAC_DIR: &str = "/System/Library/Fonts";
-
-pub const MAC: Fonts = Fonts {
-    text: font("", "SF Pro", "System Font", "SFNS.ttf", "-apple-system"),
-    texts: &[
-        font(
-            "sf-pro-rounded",
-            "SF Pro Rounded",
-            ".SF NS Rounded",
-            "SFNSRounded.ttf",
-            "ui-rounded",
-        ),
-        font(
-            "helvetica-neue",
-            "Helvetica Neue",
-            "Helvetica Neue",
-            "HelveticaNeue.ttc",
-            "\"Helvetica Neue\"",
-        ),
-        font(
-            "avenir-next",
-            "Avenir Next",
-            "Avenir Next",
-            "Avenir Next.ttc",
-            "\"Avenir Next\"",
-        ),
-    ],
-    code: font("", "Menlo", "Menlo", "Menlo.ttc", "Menlo"),
-    codes: &[font(
-        "sf-mono",
-        "SF Mono",
-        ".SF NS Mono",
-        "SFNSMono.ttf",
-        "ui-monospace",
-    )],
-};
-
 pub const WINDOWS: Fonts = Fonts {
     text: font("", "Segoe UI", "Segoe UI", "segoeui.ttf", "\"Segoe UI\""),
     texts: &[
@@ -221,18 +184,11 @@ pub const WINDOWS: Fonts = Fonts {
 
 #[must_use]
 pub fn fonts_here() -> Fonts {
-    if cfg!(target_os = "macos") {
-        MAC
-    } else {
-        WINDOWS
-    }
+    WINDOWS
 }
 
 #[must_use]
 pub fn fonts_dir_here() -> std::path::PathBuf {
-    if cfg!(target_os = "macos") {
-        return Path::new(MAC_DIR).to_path_buf();
-    }
     let windows = std::env::var("WINDIR").unwrap_or_else(|_| r"C:\Windows".to_owned());
     Path::new(&windows).join("Fonts")
 }

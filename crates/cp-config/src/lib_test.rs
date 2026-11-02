@@ -164,18 +164,6 @@ fn a_read_only_file_is_kept_only_where_the_system_keeps_it() {
             "the previous, still read-only content is the one that survives"
         );
     }
-    #[cfg(not(windows))]
-    {
-        assert!(
-            outcome.is_ok(),
-            "a rename asks the directory for permission, not the file it replaces"
-        );
-        assert_eq!(
-            read(&path).expect("still readable").theme,
-            Theme::Dark,
-            "unix replaces a read-only file as long as its directory allows it"
-        );
-    }
 
     let mut permissions = std::fs::metadata(&path).expect("stat").permissions();
     #[allow(clippy::permissions_set_readonly_false)]
@@ -443,26 +431,6 @@ fn a_blank_welcome_is_no_welcome() {
     }
     .sane();
     assert_eq!(kept.welcomed.as_deref(), Some("3.0.1"));
-}
-
-#[cfg(target_os = "macos")]
-#[test]
-fn the_old_mac_default_moves_to_the_one_handed_one_when_read() {
-    let dir = a_dir();
-    let path = at(dir.path());
-    std::fs::write(&path, "shortcut = \"Cmd+Alt+V\"\n").expect("writes");
-    assert_eq!(read(&path).expect("reads").shortcut, SHORTCUT);
-}
-
-#[cfg(target_os = "macos")]
-#[test]
-fn a_command_option_v_picked_by_hand_is_left_alone() {
-    let asked = Config {
-        shortcut: "Alt+Cmd+V".into(),
-        ..Config::default()
-    }
-    .sane();
-    assert_eq!(asked.shortcut, "Alt+Cmd+V");
 }
 
 const BROKEN_AT_MS: i64 = 1_700_000_000_000;

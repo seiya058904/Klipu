@@ -11,15 +11,9 @@ pub const FILE: &str = "config.toml";
 
 pub const SHORTCUT: &str = "Ctrl+Alt+V";
 
-#[cfg(target_os = "macos")]
-pub const PLAIN_SHORTCUT: &str = "Ctrl+Shift+V";
-#[cfg(not(target_os = "macos"))]
 pub const PLAIN_SHORTCUT: &str = "Alt+Shift+V";
 
 pub const FORMS_SHORTCUT: &str = "Ctrl+Alt+P";
-
-#[cfg(target_os = "macos")]
-const FORMER_SHORTCUT: &str = "Cmd+Alt+V";
 
 pub const THE_SYSTEMS: &[&str] = &[
     "Ctrl+C",
@@ -132,10 +126,6 @@ impl Config {
             self.shortcut = SHORTCUT.to_owned();
         }
         self.shortcut = self.shortcut.trim().to_owned();
-        #[cfg(target_os = "macos")]
-        if self.shortcut == FORMER_SHORTCUT {
-            self.shortcut = SHORTCUT.to_owned();
-        }
         self.plain_shortcut = self.plain_shortcut.trim().to_owned();
         self.forms_shortcut = self.forms_shortcut.trim().to_owned();
         if the_systems(&self.plain_shortcut) || same_keys(&self.plain_shortcut, &self.shortcut) {
@@ -189,13 +179,7 @@ fn canonical(key: &str) -> String {
         "control" => "ctrl",
         "option" => "alt",
         "command" | "super" | "meta" | "cmd" => "cmd",
-        "cmdorctrl" | "commandorcontrol" | "cmdorcontrol" | "commandorctrl" => {
-            if cfg!(target_os = "macos") {
-                "cmd"
-            } else {
-                "ctrl"
-            }
-        }
+        "cmdorctrl" | "commandorcontrol" | "cmdorcontrol" | "commandorctrl" => "ctrl",
         other => other,
     }
     .to_owned()

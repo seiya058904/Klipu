@@ -8,15 +8,11 @@ const WIDE: f64 = 360.0;
 const TALL: f64 = 184.0;
 const MARGIN: f64 = 12.0;
 
-pub fn corner(area: PhysicalRect<i32, u32>, scale: f64, top: bool) -> LogicalPosition<f64> {
+pub fn corner(area: PhysicalRect<i32, u32>, scale: f64) -> LogicalPosition<f64> {
     let left = f64::from(area.position.x) / scale;
     let up = f64::from(area.position.y) / scale;
     let x = left + f64::from(area.size.width) / scale - WIDE - MARGIN;
-    let y = if top {
-        up + MARGIN
-    } else {
-        up + f64::from(area.size.height) / scale - TALL - MARGIN
-    };
+    let y = up + f64::from(area.size.height) / scale - TALL - MARGIN;
     LogicalPosition::new(x, y)
 }
 
@@ -27,11 +23,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>) {
     let Ok(Some(screen)) = app.primary_monitor() else {
         return;
     };
-    let at = corner(
-        *screen.work_area(),
-        screen.scale_factor(),
-        cfg!(target_os = "macos"),
-    );
+    let at = corner(*screen.work_area(), screen.scale_factor());
     let built = crate::looks::dressed(WebviewWindowBuilder::new(
         app,
         LABEL,

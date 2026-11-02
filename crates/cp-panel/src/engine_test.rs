@@ -57,26 +57,8 @@ fn files(paths: &[&str]) -> Item {
     }
 }
 
-#[cfg(target_os = "macos")]
-fn files(paths: &[&str]) -> Item {
-    let urls = paths
-        .iter()
-        .map(|path| format!("file://{path}"))
-        .collect::<Vec<_>>()
-        .join("\n");
-    Item {
-        kind: Some(Kind::File),
-        formats: vec![Format {
-            id: "public.file-url".into(),
-            payload: Payload::Inline(urls.into_bytes()),
-        }],
-    }
-}
-
 #[cfg(target_os = "windows")]
 const SOMEWHERE: [&str; 2] = ["C:\\uno.txt", "C:\\dos.txt"];
-#[cfg(target_os = "macos")]
-const SOMEWHERE: [&str; 2] = ["/tmp/uno.txt", "/tmp/dos.txt"];
 
 #[test]
 fn the_preview_of_text_is_the_text_itself() {

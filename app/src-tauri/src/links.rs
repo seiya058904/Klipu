@@ -3,15 +3,6 @@ fn opened(url: &str) -> bool {
     {
         cp_win_sys::files::open_link(url)
     }
-    #[cfg(target_os = "macos")]
-    {
-        cp_mac_sys::files::open_link(url)
-    }
-    #[cfg(not(any(windows, target_os = "macos")))]
-    {
-        let _ = url;
-        false
-    }
 }
 
 #[tauri::command(async)]
@@ -30,13 +21,5 @@ pub fn linkunbound_here() -> bool {
     #[cfg(windows)]
     {
         cp_win_sys::files::linkunbound_here()
-    }
-    #[cfg(target_os = "macos")]
-    {
-        cp_mac_sys::files::linkunbound_here()
-    }
-    #[cfg(not(any(windows, target_os = "macos")))]
-    {
-        false
     }
 }

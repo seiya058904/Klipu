@@ -39,11 +39,6 @@ fn seen_outside(dir: PathBuf) -> PathBuf {
         .unwrap_or(dir)
 }
 
-#[cfg(not(windows))]
-fn seen_outside(dir: PathBuf) -> PathBuf {
-    dir
-}
-
 #[tauri::command(async)]
 pub fn save_report(
     app: tauri::AppHandle,
@@ -220,22 +215,6 @@ fn system() -> String {
         .map(|it| format!(".{it}"))
         .unwrap_or_default();
     format!("{name} {} (build {build}{patch})", read("DisplayVersion"))
-}
-
-#[cfg(target_os = "macos")]
-fn system() -> String {
-    let said = std::process::Command::new("/usr/bin/sw_vers")
-        .arg("-productVersion")
-        .output()
-        .ok()
-        .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_owned())
-        .unwrap_or_default();
-    format!("macOS {said}")
-}
-
-#[cfg(not(any(windows, target_os = "macos")))]
-fn system() -> String {
-    std::env::consts::OS.into()
 }
 
 #[cfg(test)]

@@ -2,7 +2,6 @@ use super::{spanish, worded};
 use tauri::image::Image;
 
 const WINDOWS: &[u8] = include_bytes!("../icons/tray/windows-32.png");
-const MACOS: &[u8] = include_bytes!("../icons/tray/macos@2x.png");
 
 fn ink(png: &[u8]) -> (u32, usize) {
     let art = Image::from_bytes(png).expect("the icon is a png");
@@ -20,12 +19,6 @@ fn ink(png: &[u8]) -> (u32, usize) {
         });
     assert!(seen > 0, "the icon is transparent through and through");
     ((sum / seen as u64) as u32, seen)
-}
-
-#[test]
-fn the_bar_icon_on_macos_is_pale_because_the_system_paints_it_itself() {
-    let (grey, _) = ink(MACOS);
-    assert!(grey > 200, "the macOS template has to be pale: {grey}");
 }
 
 #[test]

@@ -7,7 +7,6 @@ pub struct Waking {
 }
 
 impl Waking {
-    #[cfg(not(target_os = "macos"))]
     fn none() -> Self {
         Self {
             offered: false,
@@ -149,112 +148,6 @@ mod there {
     }
 }
 
-#[cfg(target_os = "macos")]
-mod there {
-    use super::Waking;
-    use cp_mac_sys::login::{self, LoginState};
-    use std::path::{Path, PathBuf};
-
-    const LABEL: &str = "com.rgdevment.copypaste";
-
-    pub fn settle() {
-        migrate();
-    }
-
-    pub fn waking() -> Waking {
-        let state = login::state();
-        Waking {
-            offered: state != LoginState::Missing || legacy().is_some_and(|old| old.exists()),
-            wakes: matches!(state, LoginState::On | LoginState::NeedsApproval),
-            theirs: state == LoginState::NeedsApproval,
-            managed: false,
-        }
-    }
-
-    pub fn wake(wanted: bool) -> std::io::Result<()> {
-        let exe = std::env::current_exe()?;
-        if wanted && crate::update::mounted(Some(&exe)) {
-            return Err(std::io::Error::other(
-                "move CoPanda to the Applications folder before starting it with the session",
-            ));
-        }
-        if !wanted && let Some(old) = legacy() {
-            retire(&old)?;
-        }
-        let state = login::state();
-        let settled = if wanted {
-            state == LoginState::On
-        } else {
-            matches!(state, LoginState::Off | LoginState::Missing)
-        };
-        if !settled {
-            login::set(wanted).map_err(std::io::Error::other)?;
-        }
-        if wanted
-            && login::state() == LoginState::On
-            && let Some(old) = legacy()
-        {
-            retire(&old)?;
-        }
-        Ok(())
-    }
-
-    fn migrate() {
-        let Some(old) = legacy().filter(|old| old.exists()) else {
-            return;
-        };
-        let mounted = std::env::current_exe()
-            .ok()
-            .is_some_and(|exe| crate::update::mounted(Some(&exe)));
-        if mounted {
-            return;
-        }
-        if login::state() == LoginState::Off {
-            let _ = login::set(true);
-        }
-        if login::state() == LoginState::On {
-            let _ = retire(&old);
-        }
-    }
-
-    pub fn legacy_in(home: &Path) -> PathBuf {
-        home.join("Library")
-            .join("LaunchAgents")
-            .join(format!("{LABEL}.plist"))
-    }
-
-    fn legacy() -> Option<PathBuf> {
-        std::env::var_os("HOME").map(|home| legacy_in(Path::new(&home)))
-    }
-
-    pub fn retire(plist: &Path) -> std::io::Result<bool> {
-        match std::fs::remove_file(plist) {
-            Ok(()) => Ok(true),
-            Err(why) if why.kind() == std::io::ErrorKind::NotFound => Ok(false),
-            Err(why) => Err(why),
-        }
-    }
-}
-
-#[cfg(not(any(windows, target_os = "macos")))]
-mod there {
-    use super::Waking;
-
-    pub fn settle() {}
-
-    pub fn waking() -> Waking {
-        Waking::none()
-    }
-
-    pub fn wake(_wanted: bool) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
 #[cfg(all(test, windows))]
 #[path = "waking_windows_test.rs"]
-mod tests;
-
-#[cfg(all(test, target_os = "macos"))]
-#[path = "waking_macos_test.rs"]
 mod tests;

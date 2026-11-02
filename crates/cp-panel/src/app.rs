@@ -207,9 +207,6 @@ impl App {
     }
 
     fn dress_terminals(&self, engine: &Rc<crate::engine::Engine>, latest: crate::dressing::Latest) {
-        if !cfg!(target_os = "windows") {
-            return;
-        }
         let store = self.state.borrow().store.clone();
         let shelves = crate::handing::Shelves {
             store,

@@ -277,8 +277,6 @@ fn allow<R: Runtime>(app: &AppHandle<R>) {
     {
         cp_win_sys::frontmost::let_it_come_forward(child.pid());
     }
-    #[cfg(not(target_os = "windows"))]
-    let _ = app;
 }
 
 pub fn paste_plain<R: Runtime>(app: &AppHandle<R>) {

@@ -54,13 +54,9 @@ pub fn kind_of(said: i64) -> Option<Kind> {
 
 #[cfg(target_os = "windows")]
 pub const RICH_HTML: &str = "HTML Format";
-#[cfg(not(target_os = "windows"))]
-pub const RICH_HTML: &str = "public.html";
 
 #[cfg(target_os = "windows")]
 pub const RICH_RTF: &str = "Rich Text Format";
-#[cfg(not(target_os = "windows"))]
-pub const RICH_RTF: &str = "public.rtf";
 
 pub const RICH_KEYS: [&str; 2] = ["html", "rtf"];
 

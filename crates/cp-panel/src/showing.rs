@@ -3,11 +3,7 @@ use slint::ComponentHandle;
 use std::time::Duration;
 
 pub const NEXT_FRAME: Duration = Duration::from_millis(16);
-const OUT: Duration = if cfg!(target_os = "macos") {
-    Duration::ZERO
-} else {
-    Duration::from_millis(130)
-};
+const OUT: Duration = Duration::from_millis(130);
 pub const SLOW: Duration = Duration::from_millis(100);
 
 thread_local! {

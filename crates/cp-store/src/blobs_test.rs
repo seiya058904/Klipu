@@ -83,9 +83,14 @@ fn symlink_file(target: &Path, link: &Path) {
     std::os::unix::fs::symlink(target, link).expect("a link");
 }
 
-#[cfg(windows)]
-fn symlink_file(target: &Path, link: &Path) {
-    std::os::windows::fs::symlink_file(target, link).expect("a link");
+const ERROR_PRIVILEGE_NOT_HELD: i32 = 1314;
+
+fn symlink_file(to: &Path, at: &Path) -> bool {
+    match std::os::windows::fs::symlink_file(to, at) {
+        Ok(()) => true,
+        Err(why) if why.raw_os_error() == Some(ERROR_PRIVILEGE_NOT_HELD) => false,
+        Err(why) => panic!("a link: {why}"),
+    }
 }
 
 #[test]
@@ -96,7 +101,9 @@ fn a_symlink_named_like_a_digest_is_unlinked_never_followed() {
     let digest = "c".repeat(64);
     let link = where_it_goes(&blobs, &digest);
     std::fs::create_dir_all(link.parent().expect("a parent")).expect("a folder");
-    symlink_file(&victim, &link);
+    if !symlink_file(&victim, &link) {
+        return;
+    }
     aged(&victim);
     assert_eq!(blobs.sweep(&|_| false).expect("swept"), 1);
     assert!(!link.exists() && std::fs::symlink_metadata(&link).is_err());

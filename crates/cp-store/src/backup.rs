@@ -124,10 +124,6 @@ fn written_at(store: &Store, to: &Path, at: i64) -> Result<Made> {
 
 #[cfg(target_os = "windows")]
 pub const WHERE_IT_WAS_MADE: &str = "windows";
-#[cfg(target_os = "macos")]
-pub const WHERE_IT_WAS_MADE: &str = "macos";
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
-pub const WHERE_IT_WAS_MADE: &str = "elsewhere";
 
 pub fn read(from: &Path) -> Result<Taken> {
     let copy = Connection::open_with_flags(from, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;

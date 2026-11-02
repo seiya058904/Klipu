@@ -11,7 +11,6 @@ mod group;
 mod handing;
 mod here;
 mod kept;
-#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 mod landing;
 mod layout;
 mod link;
@@ -43,20 +42,6 @@ use std::path::PathBuf;
 
 fn stand_aside() -> Result<(), slint::PlatformError> {
     let builder = i_slint_backend_winit::Backend::builder().with_renderer_name("skia-software");
-    #[cfg(target_os = "macos")]
-    let builder = {
-        use i_slint_backend_winit::winit::platform::macos::{
-            ActivationPolicy, EventLoopBuilderExtMacOS,
-        };
-        let mut quiet = i_slint_backend_winit::winit::event_loop::EventLoop::with_user_event();
-        quiet
-            .with_default_menu(false)
-            .with_activation_policy(ActivationPolicy::Accessory)
-            .with_activate_ignoring_other_apps(false);
-        builder
-            .with_default_menu_bar(false)
-            .with_event_loop_builder(quiet)
-    };
     slint::platform::set_platform(Box::new(builder.build()?))
         .map_err(|why| slint::PlatformError::Other(why.to_string()))
 }

@@ -818,16 +818,8 @@ fn count_in(english: bool, count: i64) -> String {
     }
 }
 
-const FOOTER_ES: &str = if cfg!(target_os = "macos") {
-    "pegar · ⌥⏎: más formas"
-} else {
-    "pegar · alt+enter: más formas"
-};
-const FOOTER_EN: &str = if cfg!(target_os = "macos") {
-    "paste · ⌥⏎: more forms"
-} else {
-    "paste · alt+enter: more forms"
-};
+const FOOTER_ES: &str = "pegar · alt+enter: más formas";
+const FOOTER_EN: &str = "paste · alt+enter: more forms";
 
 pub fn dress_words(ui: &crate::Panel) {
     use slint::ComponentHandle;

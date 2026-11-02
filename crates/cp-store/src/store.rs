@@ -1351,7 +1351,6 @@ pub fn restrict(path: &std::path::Path, mode: u32) -> Result<Restricted> {
     }
 }
 
-#[cfg_attr(unix, allow(dead_code))]
 fn exposure_of(path: &std::path::Path, profile: Option<&std::path::Path>) -> Restricted {
     match profile {
         Some(profile) if under(path, profile) => Restricted::InheritedFromProfile,
@@ -1359,7 +1358,6 @@ fn exposure_of(path: &std::path::Path, profile: Option<&std::path::Path>) -> Res
     }
 }
 
-#[cfg_attr(unix, allow(dead_code))]
 fn under(path: &std::path::Path, root: &std::path::Path) -> bool {
     match (path.canonicalize(), root.canonicalize()) {
         (Ok(path), Ok(root)) => path.starts_with(root),

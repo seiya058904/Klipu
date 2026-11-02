@@ -35,22 +35,6 @@ fn files(paths: &[&str]) -> Item {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
-fn files(paths: &[&str]) -> Item {
-    let urls = paths
-        .iter()
-        .map(|path| format!("file://{path}"))
-        .collect::<Vec<_>>()
-        .join("\n");
-    Item {
-        kind: Some(Kind::File),
-        formats: vec![Format {
-            id: "public.file-url".into(),
-            payload: Payload::Inline(urls.into_bytes()),
-        }],
-    }
-}
-
 fn somewhere(name: &str) -> (tempfile::TempDir, Store) {
     let dir = tempfile::tempdir().expect("a folder");
     let store = Store::open(&dir.path().join(name)).expect("opened");

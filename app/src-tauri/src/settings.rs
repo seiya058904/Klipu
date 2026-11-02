@@ -21,28 +21,12 @@ pub fn former_folder() -> Option<PathBuf> {
     {
         cp_win_sys::paths::legacy_dir()
     }
-    #[cfg(target_os = "macos")]
-    {
-        cp_mac_sys::paths::legacy_dir()
-    }
-    #[cfg(not(any(windows, target_os = "macos")))]
-    {
-        None
-    }
 }
 
 pub fn folder() -> Option<PathBuf> {
     #[cfg(windows)]
     {
         cp_win_sys::paths::data_dir()
-    }
-    #[cfg(target_os = "macos")]
-    {
-        cp_mac_sys::paths::data_dir()
-    }
-    #[cfg(not(any(windows, target_os = "macos")))]
-    {
-        None
     }
 }
 

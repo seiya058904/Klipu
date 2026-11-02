@@ -159,19 +159,10 @@ fn remember<R: Runtime>(app: &AppHandle<R>, role: Role, said: Option<&str>) {
     }
 }
 
-#[cfg(target_os = "macos")]
-pub const SPARE: &[&str] = &["Ctrl+Alt+V", "Ctrl+Cmd+V", "Ctrl+Shift+V"];
-#[cfg(not(target_os = "macos"))]
 pub const SPARE: &[&str] = &["Ctrl+Alt+V", "Alt+Shift+V", "Ctrl+Alt+Shift+V"];
 
-#[cfg(target_os = "macos")]
-pub const PLAIN_SPARE: &[&str] = &["Ctrl+Shift+V", "Ctrl+Cmd+V", "Ctrl+Alt+B"];
-#[cfg(not(target_os = "macos"))]
 pub const PLAIN_SPARE: &[&str] = &["Alt+Shift+V", "Ctrl+Alt+Shift+V", "Ctrl+Alt+B"];
 
-#[cfg(target_os = "macos")]
-pub const FORMS_SPARE: &[&str] = &["Ctrl+Alt+P", "Ctrl+Cmd+P", "Ctrl+Shift+P"];
-#[cfg(not(target_os = "macos"))]
 pub const FORMS_SPARE: &[&str] = &["Ctrl+Alt+P", "Alt+Shift+P", "Ctrl+Alt+Shift+P"];
 
 fn grantable<R: Runtime>(app: &AppHandle<R>, one: Shortcut) -> bool {

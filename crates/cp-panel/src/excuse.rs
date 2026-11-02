@@ -52,22 +52,10 @@ pub fn cannot_name() -> &'static str {
     )
 }
 
-#[cfg(target_os = "macos")]
-const fn denied_es() -> &'static str {
-    "falta el permiso de accesibilidad; sigue copiado"
-}
-
-#[cfg(target_os = "macos")]
-const fn denied_en() -> &'static str {
-    "the accessibility permission is missing; still copied"
-}
-
-#[cfg(not(target_os = "macos"))]
 const fn denied_es() -> &'static str {
     "el sistema no dejó enviar la pulsación; sigue copiado"
 }
 
-#[cfg(not(target_os = "macos"))]
 const fn denied_en() -> &'static str {
     "the system refused the keystroke; still copied"
 }

@@ -14,7 +14,7 @@ export component Panel inherits Window {
     height: Theme.height;
     no-frame: true;
     always-on-top: true;
-    background: Theme.apple ? Theme.panel : transparent;
+    background: transparent;
     default-font-family: Theme.font;
     title: "CoPanda";
     icon: @image-url("../../../app/src-tauri/icons/128x128.png");
@@ -137,7 +137,7 @@ export component Panel inherits Window {
         border-width: 1px;
         border-color: Theme.panel-border;
         background: Theme.panel;
-        opacity: Theme.apple ? 1.0 : root.shown;
+        opacity: root.shown;
         clip: true;
         animate opacity { duration: Theme.appear; easing: ease-out; }
 
@@ -275,8 +275,7 @@ export component Panel inherits Window {
                                         root.sheet-open = false;
                                         return reject;
                                     }
-                                    if event.text == Key.F1
-                                        || (Theme.apple && event.text == "," && event.modifiers.control) {
+                                    if event.text == Key.F1 {
                                         root.ask-settings();
                                         return accept;
                                     }
@@ -295,14 +294,12 @@ export component Panel inherits Window {
                                         return accept;
                                     }
                                     if event.text == Key.Backspace
-                                        && !(Theme.apple && event.modifiers.control)
                                         && root.query == ""
                                         && root.tags.length > 0 {
                                         root.drop-tag("");
                                         return accept;
                                     }
-                                    if ((!Theme.apple && event.text == Key.Delete)
-                                            || (Theme.apple && event.text == Key.Backspace && event.modifiers.control))
+                                    if event.text == Key.Delete
                                         && root.query == ""
                                         && root.current >= 0 {
                                         root.remove(root.cards[root.current].id);
@@ -323,7 +320,7 @@ export component Panel inherits Window {
                                         return accept;
                                     }
                                     if (event.text == "g" || event.text == "t")
-                                        && (event.modifiers.alt || (Theme.apple && event.modifiers.control)) {
+                                        && event.modifiers.alt {
                                         root.ask-kinds();
                                         return accept;
                                     }

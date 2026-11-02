@@ -102,18 +102,6 @@ fn no_two_spare_entries_are_the_same_combination_spelled_differently() {
     }
 }
 
-#[cfg(target_os = "macos")]
-const SPOKEN_FOR: &[&str] = &[
-    "Shift+Cmd+V",
-    "Alt+Shift+Cmd+V",
-    "Alt+Cmd+V",
-    "Cmd+Space",
-    "Alt+Cmd+Space",
-    "Ctrl+Space",
-    "Ctrl+Alt+Space",
-    "Ctrl+Cmd+Space",
-];
-#[cfg(not(target_os = "macos"))]
 const SPOKEN_FOR: &[&str] = &[
     "Ctrl+Shift+V",
     "Ctrl+Alt+C",

@@ -35,9 +35,6 @@ fn worded(spanish: bool) -> [&'static str; 4] {
     }
 }
 
-#[cfg(target_os = "macos")]
-const BAR: &[u8] = include_bytes!("../icons/tray/macos@2x.png");
-#[cfg(not(target_os = "macos"))]
 const BAR: &[u8] = include_bytes!("../icons/tray/windows-32.png");
 
 fn leave<R: Runtime>(app: &AppHandle<R>) {
@@ -98,65 +95,12 @@ pub fn raise<R: Runtime>(app: &AppHandle<R>, spanish: bool) -> Option<()> {
         .build(app)
         .ok()?;
 
-    #[cfg(target_os = "macos")]
-    let _ = tray.set_icon_as_template(true);
-    #[cfg(not(target_os = "macos"))]
     let _ = &tray;
 
     app.manage(Said(Mutex::new(vec![panel, settings, restart, quit])));
     app.manage(Shown::default());
 
     Some(())
-}
-
-#[cfg(target_os = "macos")]
-const CLOSES: &str = "close-window";
-#[cfg(target_os = "macos")]
-const QUITS: &str = "close-window-on-quit";
-
-#[cfg(target_os = "macos")]
-pub fn settle_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
-    use tauri::menu::{PredefinedMenuItem, Submenu};
-    let closes = MenuItem::with_id(app, CLOSES, "Close Window", true, Some("CmdOrCtrl+W"))?;
-    let quits = MenuItem::with_id(app, QUITS, "Close", true, Some("CmdOrCtrl+Q"))?;
-    let ours = Submenu::with_items(
-        app,
-        "CoPanda",
-        true,
-        &[
-            &PredefinedMenuItem::hide(app, None)?,
-            &PredefinedMenuItem::minimize(app, None)?,
-            &PredefinedMenuItem::separator(app)?,
-            &closes,
-            &quits,
-        ],
-    )?;
-    let edit = Submenu::with_items(
-        app,
-        "Edit",
-        true,
-        &[
-            &PredefinedMenuItem::undo(app, None)?,
-            &PredefinedMenuItem::redo(app, None)?,
-            &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::cut(app, None)?,
-            &PredefinedMenuItem::copy(app, None)?,
-            &PredefinedMenuItem::paste(app, None)?,
-            &PredefinedMenuItem::select_all(app, None)?,
-        ],
-    )?;
-    app.set_menu(Menu::with_items(app, &[&ours, &edit])?)?;
-    app.on_menu_event(|app, event| {
-        if ![CLOSES, QUITS].contains(&event.id().as_ref()) {
-            return;
-        }
-        for window in app.webview_windows().into_values() {
-            if window.is_focused().unwrap_or(false) {
-                let _ = window.close();
-            }
-        }
-    });
-    Ok(())
 }
 
 pub fn reword_tip<R: Runtime>(app: &AppHandle<R>, spanish: bool) {
@@ -240,30 +184,8 @@ pub fn surface_at<R: Runtime>(app: &AppHandle<R>, rail: Option<&str>) {
     }
 }
 
-#[cfg(target_os = "macos")]
-fn unzoomed<R: Runtime>(window: &tauri::WebviewWindow<R>) {
-    let _ = window.with_webview(|webview| {
-        if let Some(ns_window) = std::ptr::NonNull::new(webview.ns_window()) {
-            cp_mac_sys::titlebar::without_zoom(ns_window);
-        }
-    });
-}
-
-#[cfg(not(target_os = "macos"))]
 fn unzoomed<R: Runtime>(_window: &tauri::WebviewWindow<R>) {}
 
-#[cfg(target_os = "macos")]
-fn framed<'a, R: Runtime, M: Manager<R>>(
-    builder: WebviewWindowBuilder<'a, R, M>,
-) -> WebviewWindowBuilder<'a, R, M> {
-    builder
-        .title_bar_style(tauri::TitleBarStyle::Overlay)
-        .hidden_title(true)
-        .maximizable(false)
-        .traffic_light_position(tauri::LogicalPosition::new(14.0, 17.0))
-}
-
-#[cfg(not(target_os = "macos"))]
 fn framed<'a, R: Runtime, M: Manager<R>>(
     builder: WebviewWindowBuilder<'a, R, M>,
 ) -> WebviewWindowBuilder<'a, R, M> {
