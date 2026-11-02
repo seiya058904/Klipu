@@ -83,53 +83,6 @@ fn what_was_pasted_once_or_never_carries_no_count() {
     assert_eq!(card.title.as_str(), "Texto");
 }
 
-#[test]
-fn every_chip_sits_where_its_count_puts_it() {
-    let facets = [
-        Facet {
-            kind: Kind::Image,
-            count: 2,
-        },
-        Facet {
-            kind: Kind::Text,
-            count: 3,
-        },
-        Facet {
-            kind: Kind::Code,
-            count: 0,
-        },
-        Facet {
-            kind: Kind::File,
-            count: 2,
-        },
-    ];
-    let chosen = ["text".to_owned()];
-    let chips = chips_of(&facets, &chosen);
-    let keys: Vec<&str> = chips.iter().map(|c| c.key.as_str()).collect();
-    assert_eq!(
-        keys,
-        ["text", "file", "image"],
-        "solo tipos, del que más tiene al que menos"
-    );
-    assert!(
-        chips[0].selected,
-        "the chosen one is marked wherever it lands"
-    );
-    assert!(!chips[1].selected);
-    assert_eq!(chips[0].count.as_str(), "3");
-    assert!(
-        chips
-            .iter()
-            .all(|one| one.key != "all" && one.key != "pinned"),
-        "todo y anclados no son tipos y no viven aquí"
-    );
-
-    assert!(
-        chips_of(&[], &[]).is_empty(),
-        "with no facets there is no row"
-    );
-}
-
 fn excerpt_of(parts: &[(&str, bool)]) -> Excerpt {
     Excerpt {
         segments: parts
@@ -191,46 +144,7 @@ fn a_row_that_matched_carries_its_three_parts() {
     assert_eq!(card.tail.as_str(), " y después");
 }
 
-const EXPIRED: &str =
     "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjE3MDAwMDAwMDAsInN1YiI6ImNwLTMifQ.sig";
-
-#[test]
-fn a_card_wears_what_is_wrong_with_it() {
-    let mut broken = row(Some(Kind::File));
-    broken.broken_since = Some(10);
-    assert_eq!(alert_of(&broken, None, 1_000), "No encontrado");
-    assert_eq!(badge_of(None), "");
-
-    let plain = row(Some(Kind::Text));
-    assert_eq!(alert_of(&plain, None, 1_000), "");
-
-    let mut token = row(Some(Kind::Token));
-    token.preview = EXPIRED.into();
-    let claims = claims_in(&token);
-    assert_eq!(
-        badge_of(claims.as_ref()),
-        "JWT",
-        "un token legible se marca"
-    );
-    assert_eq!(
-        alert_of(&token, claims.as_ref(), 1_700_000_001_000),
-        "CADUCADO",
-        "pasado el exp, se dice"
-    );
-    assert_eq!(
-        alert_of(&token, claims.as_ref(), 1_600_000_000_000),
-        "",
-        "antes del exp, no"
-    );
-
-    let mut fake = row(Some(Kind::Token));
-    fake.preview = "no-es-un-token".into();
-    assert_eq!(
-        badge_of(claims_in(&fake).as_ref()),
-        "",
-        "lo que no se lee no lleva insignia"
-    );
-}
 
 #[test]
 fn a_card_asks_for_as_many_lines_as_its_text_needs() {
@@ -261,74 +175,6 @@ cuatro"
 }
 
 #[test]
-fn a_hash_in_the_search_box_becomes_a_kind_filter() {
-    assert_eq!(sweeten("#ip"), "k:ip");
-    assert_eq!(sweeten("#imagen playa"), "k:image playa");
-    assert_eq!(sweeten("#Código git"), "k:code git");
-    assert_eq!(sweeten("#vídeo"), "k:video");
-    assert_eq!(sweeten("reunión jueves"), "reunión jueves");
-    assert_eq!(
-        sweeten("#loquesea"),
-        "#loquesea",
-        "lo que no es una clase se busca"
-    );
-    assert_eq!(sweeten("#carpeta #texto"), "k:folder k:text");
-    assert_eq!(
-        sweeten("-#imagen playa"),
-        "-k:image playa",
-        "y se puede excluir"
-    );
-    assert_eq!(
-        sweeten("-reunión"),
-        "-reunión",
-        "el menos suelto no se toca"
-    );
-}
-
-#[test]
-fn every_form_answers_to_its_key() {
-    for form in Form::ALL {
-        assert_eq!(form_of(form.as_str()), Some(form));
-    }
-    assert_eq!(form_of("no-existe"), None);
-}
-
-#[test]
-fn nothing_the_panel_says_is_left_untranslated() {
-    for form in Form::ALL {
-        let (es, en) = form_pair(form);
-        assert!(
-            !es.is_empty() && !en.is_empty(),
-            "{form:?} was left without a name"
-        );
-    }
-    for kind in [None, Some(Kind::Text), Some(Kind::Code), Some(Kind::Image)] {
-        let (es, en) = label_pair(kind);
-        assert!(
-            !es.is_empty() && !en.is_empty(),
-            "{kind:?} was left without a name"
-        );
-    }
-}
-
-#[test]
-fn what_is_written_in_english_is_not_the_spanish_copied_over() {
-    let english: Vec<&str> = Form::ALL
-        .into_iter()
-        .map(|form| form_pair(form).1)
-        .collect();
-    let shared = Form::ALL
-        .into_iter()
-        .filter(|form| {
-            let (es, en) = form_pair(*form);
-            es == en
-        })
-        .count();
-    assert!(shared <= 3, "too many forms left untranslated: {shared}");
-    assert!(english.iter().all(|said| !said.contains('ó')));
-}
-
-#[test]
 fn an_empty_list_explains_itself_in_both_tongues() {
     for english in [false, true] {
         let (title, hint) = empty_in(english, "", false, false);
@@ -350,13 +196,6 @@ fn the_count_reads_the_way_each_tongue_counts() {
     assert_eq!(count_in(true, 0), "nothing kept");
     assert_eq!(count_in(true, 1), "1 item");
     assert_eq!(count_in(true, 7), "7 items");
-}
-
-#[test]
-fn every_form_has_a_name_for_the_sheet() {
-    for form in Form::ALL {
-        assert!(!label_of_form(form).is_empty(), "{form:?} has no name");
-    }
 }
 
 #[test]
@@ -442,26 +281,6 @@ fn a_colour_card_carries_the_colour_it_is() {
     assert_eq!(card.paint.green(), 0x88);
     assert_eq!(card.paint.blue(), 0x00);
     assert_eq!(card.paint.alpha(), 0xFF);
-}
-
-#[test]
-fn the_colour_is_read_from_the_first_line_whatever_shape_it_has() {
-    for (said, red, green, blue) in [
-        ("#F80", 0xFF, 0x88, 0x00),
-        ("rgb(1, 2, 3)", 1, 2, 3),
-        ("hsl(120, 100%, 50%)", 0, 255, 0),
-        ("#FF8800\ntrailing noise", 0xFF, 0x88, 0x00),
-    ] {
-        let mut one = row(Some(Kind::Color));
-        one.preview = said.into();
-        let card = card_of(&one, 1_000_000, None, 2);
-        assert!(card.paints, "«{said}»");
-        assert_eq!(
-            (card.paint.red(), card.paint.green(), card.paint.blue()),
-            (red, green, blue),
-            "«{said}»"
-        );
-    }
 }
 
 #[test]
@@ -648,29 +467,6 @@ fn a_first_line_of_only_spaces_counts_as_empty() {
 }
 
 #[test]
-fn the_card_asks_for_the_same_lines_the_model_reserves() {
-    let store = cp_store::Store::in_memory().expect("esquema");
-    let token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhIiwic3ViIjoiYiIsImV4cCI6MX0.firma";
-    store.insert_text("t", token, 1).expect("insert");
-    let page = store
-        .list(&cp_store::Filter::default(), 10, None)
-        .expect("pagina");
-    let row = page.rows.first().expect("una fila");
-    let body = super::body_of(row);
-    let card = super::card_of(row, 2, None, 2);
-    assert_eq!(
-        card.lines,
-        super::open_lines_of(row, &body, 1_000_000),
-        "el delegado dibuja con card.lines y el modelo reserva con la misma cuenta: si se separan, la tarjeta se corta"
-    );
-    assert!(
-        card.lines > super::lines_of(&body),
-        "un token con claves pide mas alto que su texto suelto"
-    );
-}
-
-#[test]
 fn the_second_line_keeps_the_app_and_what_the_card_says() {
     assert_eq!(super::under_line("476×576", "Orca", ""), "476×576 · Orca");
 }
@@ -716,42 +512,6 @@ fn the_age_a_card_shows_is_the_one_the_list_is_sorted_by() {
         1_000,
         "pasting something long after copying it must not make it look older"
     );
-}
-
-#[test]
-fn the_lines_an_open_card_asks_for_are_its_body_plus_its_table_and_a_gap() {
-    let mut text = row(Some(Kind::Text));
-    text.preview = "una sola linea".into();
-    let body = super::body_of(&text);
-    assert_eq!(
-        super::open_lines_of(&text, &body, 1_000_000),
-        super::lines_of(&body),
-        "with no table there is nothing to add"
-    );
-
-    let mut token = row(Some(Kind::Token));
-    token.preview = TOKEN.into();
-    let body = super::body_of(&token);
-    let rows = i32::try_from(crate::token::rows_in(TOKEN, 1_000_000, false)).expect("a few");
-    assert!(rows > 0);
-    assert_eq!(
-        super::open_lines_of(&token, &body, 1_000_000),
-        1 + rows + 1,
-        "with a table to read, the token itself is folded to one elided line: that line, the gap,          and a line per claim"
-    );
-}
-
-#[test]
-fn only_a_token_is_read_as_a_token() {
-    let mut said = row(Some(Kind::Text));
-    said.preview = TOKEN.into();
-    let card = card_of(&said, 1_000_000, None, 2);
-    assert!(
-        !card.claims,
-        "a text that happens to look like a JWT is still a text, and must not grow a table"
-    );
-    said.kind = Some(Kind::Token);
-    assert!(card_of(&said, 1_000_000, None, 2).claims);
 }
 
 #[test]
@@ -834,38 +594,6 @@ fn the_count_reaches_the_general_list_and_not_only_the_views_by_kind() {
          sees: «{}»",
         card.under
     );
-}
-
-#[test]
-fn choosing_a_chip_does_not_move_it() {
-    let facets = [
-        Facet {
-            kind: Kind::Text,
-            count: 30,
-        },
-        Facet {
-            kind: Kind::Image,
-            count: 20,
-        },
-        Facet {
-            kind: Kind::Json,
-            count: 2,
-        },
-    ];
-    let loose: Vec<String> = chips_of(&facets, &[])
-        .iter()
-        .map(|one| one.key.to_string())
-        .collect();
-    let picked: Vec<String> = chips_of(&facets, &["json".to_owned()])
-        .iter()
-        .map(|one| one.key.to_string())
-        .collect();
-    assert_eq!(
-        loose, picked,
-        "a strip that rearranges itself under the cursor is a strip you have to read again every \
-         time you touch it"
-    );
-    assert_eq!(loose, ["text", "image", "json"]);
 }
 
 #[test]
@@ -1049,12 +777,4 @@ fn a_long_text_card_shows_the_lines_the_chosen_height_allows() {
     assert_eq!(card_of(&long, 1_000_000, None, 3).shut_lines, 3);
     let shut = |most| face_for(&long, false, most).shut_px();
     assert!(shut(3) > shut(2) && shut(2) > shut(1));
-}
-
-#[test]
-fn the_space_after_the_last_word_reaches_the_search() {
-    assert_eq!(sweeten("jira "), "jira ");
-    assert_eq!(sweeten("jira"), "jira");
-    assert_eq!(sweeten("#imagen jira  "), "k:image jira ");
-    assert_eq!(sweeten("   "), "");
 }

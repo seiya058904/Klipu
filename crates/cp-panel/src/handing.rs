@@ -1,11 +1,7 @@
-use crate::FormRow;
 use crate::here;
 use crate::landing::{Landing, Towards};
 use crate::note::note;
-use crate::view::{AS_IS, as_is_label, form_of, label_of_form, shorthand_of};
 use cp_store::Store;
-
-pub const PLAIN: &str = "plain";
 
 fn landing_for(store: &Store, item: &cp_core::item::Item, id: i64, towards: Towards) -> Landing {
     if towards == Towards::Elsewhere {
@@ -128,70 +124,9 @@ impl crate::dressing::Closet for Shelves {
     }
 }
 
-fn glimpse(rendered: Option<cp_core::paste_as::Rendered>) -> String {
-    const SHOWN: usize = 22;
-    let text = match rendered {
-        Some(cp_core::paste_as::Rendered::Text(text)) => text,
-        Some(cp_core::paste_as::Rendered::Jpeg(bytes)) => {
-            return format!("{} KB", bytes.len() / 1024);
-        }
-        None => return String::new(),
-    };
-    let flat: String = text
-        .chars()
-        .map(|one| if one.is_control() { ' ' } else { one })
-        .collect();
-    let trimmed = flat.split_whitespace().collect::<Vec<_>>().join(" ");
-    if trimmed.chars().count() <= SHOWN {
-        return trimmed;
-    }
-    let kept: String = trimmed.chars().take(SHOWN).collect();
-    format!("{}…", kept.trim_end())
-}
-
-pub fn forms_of(store: &Store, id: i64) -> Vec<FormRow> {
-    let Ok(Some(item)) = store.item(id) else {
-        return Vec::new();
-    };
-    let ocr = store.ocr_text(id).ok().flatten();
-    let content = here::content_of(&item, ocr.as_deref());
-    let mut rows = vec![FormRow {
-        key: AS_IS.into(),
-        label: as_is_label(item.kind).into(),
-        preview: glimpse(
-            content
-                .text
-                .as_deref()
-                .map(|text| cp_core::paste_as::Rendered::Text(text.to_owned())),
-        )
-        .into(),
-    }];
-    rows.extend(
-        cp_core::paste_as::forms_for(&content)
-            .into_iter()
-            .map(|form| {
-                let shown = glimpse(cp_core::paste_as::render(form, &content));
-                match shorthand_of(form) {
-                    Some(short) => FormRow {
-                        key: form.as_str().into(),
-                        label: shown.into(),
-                        preview: short.into(),
-                    },
-                    None => FormRow {
-                        key: form.as_str().into(),
-                        label: label_of_form(form).into(),
-                        preview: shown.into(),
-                    },
-                }
-            }),
-    );
-    rows
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refused {
     Textless,
-    Unmade,
     Failed,
 }
 
@@ -199,68 +134,37 @@ impl Refused {
     pub fn said(self) -> &'static str {
         match self {
             Refused::Textless => crate::say::pick(
-                "no tiene texto para pegarlo así; elige otra forma",
-                "it has no text to paste that way; pick another",
-            ),
-            Refused::Unmade => crate::say::pick(
-                "no se pudo preparar esa forma; elige otra",
-                "that form could not be made; pick another",
+                "no tiene texto para pegarlo en plano",
+                "it has no text to paste as plain",
             ),
             Refused::Failed => crate::app::busy(),
         }
     }
 }
 
-pub fn paste_as(
+pub fn paste_plain(
     store: &Store,
     engine: Option<&crate::engine::Engine>,
     id: i64,
-    key: &str,
-    towards: Towards,
 ) -> Result<(), Refused> {
-    if key == AS_IS {
-        return written_or_not(hand_over(store, engine, id, towards));
-    }
     let Ok(Some(item)) = store.item(id) else {
         return Err(Refused::Failed);
     };
     let ocr = store.ocr_text(id).ok().flatten();
     let content = here::content_of(&item, ocr.as_deref());
-    let form = if key == PLAIN {
-        cp_core::paste_as::plainest(&content)
-    } else {
-        form_of(key)
+    let Some(text) = cp_core::paste_as::plainest(&content) else {
+        note(&format!("pasting {id} as plain text: it has no text"));
+        return Err(Refused::Textless);
     };
-    let Some(form) = form else {
-        note(&format!(
-            "pasting {id} as {key}: there is no such form for it"
-        ));
-        return Err(if key == PLAIN {
-            Refused::Textless
-        } else {
-            Refused::Unmade
-        });
-    };
-    let Some(rendered) = cp_core::paste_as::render(form, &content) else {
-        note(&format!(
-            "pasting {id} as {key}: the form gave nothing back"
-        ));
-        return Err(Refused::Unmade);
-    };
-    let made = rendered.into_item();
+    let made = cp_core::item::Item::plain(&text);
     let written = short_of(id, written_over(&made, &Landing::anywhere(), engine));
-    if written && let Err(why) = store.record_paste(id, crate::app::now_ms()) {
+    if !written {
+        return Err(Refused::Failed);
+    }
+    if let Err(why) = store.record_paste(id, crate::app::now_ms()) {
         note(&format!("{id} was pasted and nobody wrote it down: {why}"));
     }
-    written_or_not(written)
-}
-
-fn written_or_not(written: bool) -> Result<(), Refused> {
-    if written {
-        Ok(())
-    } else {
-        Err(Refused::Failed)
-    }
+    Ok(())
 }
 
 pub fn newest(store: &Store, back: usize) -> Option<(cp_store::Listed, bool)> {

@@ -1,11 +1,7 @@
 use super::*;
-use crate::drop::drop_of;
 use cp_core::item::Format;
 use cp_core::kind::Kind;
-use cp_core::paste_as::{Form, Rendered, forms_for, render};
 use cp_win_sys::writing::utf16_of;
-
-const WORD_HTML: &str = "Version:0.9\r\nStartHTML:0000000105\r\nEndHTML:0000000200\r\nStartFragment:0000000141\r\nEndFragment:0000000164\r\n<html><body><!--StartFragment--><p><b>hola</b></p><!--EndFragment--></body></html>";
 
 fn inline(id: &str, bytes: &[u8]) -> Format {
     Format {
@@ -16,58 +12,6 @@ fn inline(id: &str, bytes: &[u8]) -> Format {
 
 fn unicode(text: &str) -> Format {
     inline("CF_UNICODETEXT", &utf16_of(text))
-}
-
-#[test]
-fn a_word_paragraph_is_rich_with_html_and_plain_text() {
-    let item = Item {
-        kind: Some(Kind::Text),
-        formats: vec![
-            inline("Rich Text Format", b"{\\rtf1 hola}"),
-            inline("HTML Format", WORD_HTML.as_bytes()),
-            unicode("hola"),
-            Format {
-                id: "CF_DIBV5".into(),
-                payload: Payload::Announced { size: None },
-            },
-        ],
-    };
-    let content = content_of(&item, None);
-    assert_eq!(content.text.as_deref(), Some("hola"));
-    assert_eq!(content.html.as_deref(), Some(WORD_HTML));
-    assert!(content.rich);
-    assert_eq!(content.image, None);
-    assert_eq!(
-        forms_for(&content),
-        vec![
-            Form::PlainText,
-            Form::Markdown,
-            Form::TextQuote,
-            Form::TextUpper,
-            Form::TextLower
-        ]
-    );
-}
-
-#[test]
-fn the_clipboard_header_of_the_html_never_reaches_the_markdown() {
-    let item = Item {
-        kind: Some(Kind::Text),
-        formats: vec![inline("HTML Format", WORD_HTML.as_bytes()), unicode("hola")],
-    };
-    let markdown = render(Form::Markdown, &content_of(&item, None));
-    assert_eq!(markdown, Some(Rendered::Text("**hola**".into())));
-}
-
-#[test]
-fn html_alone_is_enough_to_be_rich() {
-    let item = Item {
-        kind: Some(Kind::Text),
-        formats: vec![inline("HTML Format", b"<i>hola</i>"), unicode("hola")],
-    };
-    let content = content_of(&item, None);
-    assert!(content.rich);
-    assert_eq!(content.html.as_deref(), Some("<i>hola</i>"));
 }
 
 #[test]
@@ -83,105 +27,11 @@ fn plain_rtf_alone_is_rich_and_a_blob_reads_like_an_inline_payload() {
         ],
     };
     let content = content_of(&item, None);
-    assert!(content.rich, "el RTF a solas ya es enriquecido");
     assert_eq!(
         content.text.as_deref(),
         Some("hola"),
         "un blob se lee igual que un inline"
     );
-}
-
-#[test]
-fn a_rich_text_with_an_image_offers_both_families() {
-    let item = Item {
-        kind: Some(Kind::Text),
-        formats: vec![
-            inline("Rich Text Format", b"{\\rtf1 hola}"),
-            unicode("hola"),
-            inline("PNG", &[137, 80, 78, 71]),
-        ],
-    };
-    assert_eq!(
-        forms_for(&content_of(&item, None)),
-        vec![
-            Form::PlainText,
-            Form::ImageJpeg,
-            Form::TextQuote,
-            Form::TextUpper,
-            Form::TextLower
-        ],
-        "un documento con una imagen incrustada se puede pegar como texto o como su imagen"
-    );
-}
-
-#[test]
-fn an_rtf_only_copy_is_rich_but_has_no_markdown() {
-    let item = Item {
-        kind: Some(Kind::Text),
-        formats: vec![
-            inline("Rich Text Format", b"{\\rtf1 hola}"),
-            unicode("hola"),
-        ],
-    };
-    let content = content_of(&item, None);
-    assert!(content.rich);
-    assert_eq!(content.html, None);
-    assert_eq!(
-        forms_for(&content),
-        vec![
-            Form::PlainText,
-            Form::TextQuote,
-            Form::TextUpper,
-            Form::TextLower
-        ]
-    );
-}
-
-#[test]
-fn a_drop_becomes_its_paths_and_a_link_carries_no_title() {
-    let files = Item {
-        kind: Some(Kind::File),
-        formats: vec![inline(
-            "CF_HDROP",
-            &drop_of(&[r"C:\Mis Documentos\cp a9.png", r"C:\dos.txt"]),
-        )],
-    };
-    let content = content_of(&files, None);
-    assert_eq!(
-        content.paths,
-        vec![r"C:\Mis Documentos\cp a9.png", r"C:\dos.txt"]
-    );
-    assert_eq!(content.text, None);
-    assert_eq!(forms_for(&content), vec![Form::Path, Form::FileName]);
-
-    let link = Item {
-        kind: Some(Kind::Link),
-        formats: vec![
-            unicode("https://ejemplo.test"),
-            inline("Chromium internal source URL", b"https://ejemplo.test"),
-        ],
-    };
-    let content = content_of(&link, None);
-    assert_eq!(content.title, None);
-    let forms = forms_for(&content);
-    assert!(forms.contains(&Form::LinkMarkdown));
-    assert!(
-        !forms.contains(&Form::LinkTitled),
-        "with no title there is no titled form"
-    );
-}
-
-#[test]
-fn a_stored_image_and_what_was_read_in_it() {
-    let item = Item {
-        kind: Some(Kind::Image),
-        formats: vec![inline("PNG", &[137, 80, 78, 71])],
-    };
-    let content = content_of(&item, Some("Pedido 4417"));
-    assert_eq!(content.image, Some(&[137u8, 80, 78, 71][..]));
-    assert_eq!(content.ocr, Some("Pedido 4417"));
-    assert!(!content.rich);
-    assert_eq!(forms_for(&content), vec![Form::ImageJpeg, Form::ImageOcr]);
 }
 
 #[test]
@@ -249,6 +99,4 @@ fn bytes_that_are_not_text_do_not_pretend_to_be() {
     };
     let content = content_of(&item, None);
     assert_eq!(content.text, None);
-    assert_eq!(content.html, None);
-    assert!(!content.rich, "unreadable HTML does not make an item rich");
 }

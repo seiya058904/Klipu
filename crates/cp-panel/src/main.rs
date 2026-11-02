@@ -26,13 +26,9 @@ mod placing;
 mod quick;
 mod reaching;
 mod say;
-mod shape;
 mod showing;
 mod tags;
-mod token;
 mod view;
-mod wave;
-mod ways;
 
 slint::include_modules!();
 

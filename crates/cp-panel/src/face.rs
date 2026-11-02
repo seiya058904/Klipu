@@ -11,7 +11,6 @@ pub const BOTTOM: f32 = 10.0;
 pub const BETWEEN: f32 = 6.0;
 pub const LINE: f32 = 19.0;
 pub const MONO_LINE: f32 = 17.0;
-pub const KEYS_LINE: f32 = 16.0;
 pub const BLOCK_PAD: f32 = 12.0;
 pub const THUMB: f32 = 50.0;
 pub const PAINT: f32 = 24.0;
@@ -24,12 +23,10 @@ pub const OPEN_PAINT: f32 = 48.0;
 
 const OPEN_WORDS: i32 = 12;
 const OPEN_CODE: i32 = 12;
-const OPEN_JSON: i32 = 6;
 const OPEN_LINK: i32 = 3;
 const OPEN_PER_LINE: usize = 58;
 const MONO_PER_LINE: usize = 54;
 const WORDS_PER_LINE: usize = 52;
-const KEYS_PER_LINE: usize = 56;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Face {
@@ -38,10 +35,8 @@ pub enum Face {
     Thumb,
     Paint,
     Block(i32),
-    Keys(i32),
     Link,
     File,
-    Media,
     Words(i32),
 }
 
@@ -51,7 +46,6 @@ pub struct Seen<'a> {
     pub thumb: bool,
     pub paints: bool,
     pub body: &'a str,
-    pub keys: &'a str,
     pub most: i32,
 }
 
@@ -73,14 +67,12 @@ impl Face {
             return Self::Paint;
         }
         match seen.kind {
-            Some(Kind::Code | Kind::Token) => {
+            Some(Kind::Code | Kind::Token | Kind::Json) => {
                 let (_, second) = opening_of(seen.body);
                 Self::Block(if second.is_empty() { 1 } else { most.min(2) })
             }
-            Some(Kind::Json) => Self::Keys(lines_for(seen.keys, KEYS_PER_LINE, most)),
             Some(Kind::Link) => Self::Link,
-            Some(Kind::File | Kind::Folder) => Self::File,
-            Some(Kind::Audio | Kind::Video) => Self::Media,
+            Some(Kind::File | Kind::Folder | Kind::Audio | Kind::Video) => Self::File,
             _ => Self::Words(lines_for(
                 &crate::view::squeezed_of(seen.body),
                 WORDS_PER_LINE,
@@ -96,17 +88,15 @@ impl Face {
             Self::Thumb => "thumb",
             Self::Paint => "paint",
             Self::Block(_) => "block",
-            Self::Keys(_) => "keys",
             Self::Link => "link",
             Self::File => "file",
-            Self::Media => "media",
             Self::Words(_) => "words",
         }
     }
 
     pub fn lines(self) -> i32 {
         match self {
-            Self::Block(lines) | Self::Keys(lines) | Self::Words(lines) => lines,
+            Self::Block(lines) | Self::Words(lines) => lines,
             _ => 1,
         }
     }
@@ -117,8 +107,7 @@ impl Face {
             Self::Thumb | Self::FoundThumb => THUMB,
             Self::Paint => PAINT,
             Self::Block(lines) => BLOCK_PAD + MONO_LINE * lines as f32,
-            Self::Keys(lines) => KEYS_LINE * lines as f32,
-            Self::File | Self::Media => TILE,
+            Self::File => TILE,
             Self::Words(lines) => LINE * lines as f32,
         }
     }
@@ -137,7 +126,7 @@ pub struct Opened {
     pub more: String,
 }
 
-pub fn opened_of(face: Face, json: bool, body: &str, english: bool) -> Opened {
+pub fn opened_of(face: Face, body: &str, english: bool) -> Opened {
     match face {
         Face::Words(_) | Face::Found => {
             let wrapped = wrapped_lines(body, OPEN_PER_LINE);
@@ -147,8 +136,7 @@ pub fn opened_of(face: Face, json: bool, body: &str, english: bool) -> Opened {
                 more: shown_of(body.lines().count(), wrapped, OPEN_WORDS, english),
             }
         }
-        Face::Keys(_) if json => mono_opened(&pretty(body), OPEN_JSON, english),
-        Face::Block(_) | Face::Keys(_) => mono_opened(body, OPEN_CODE, english),
+        Face::Block(_) => mono_opened(body, OPEN_CODE, english),
         Face::Link => Opened {
             text: body.trim().to_owned(),
             lines: wrapped_lines(body.trim(), MONO_PER_LINE).clamp(1, OPEN_LINK),
@@ -195,13 +183,6 @@ fn shown_of(total: usize, wrapped: i32, cap: i32, english: bool) -> String {
     }
 }
 
-fn pretty(body: &str) -> String {
-    serde_json::from_str::<serde_json::Value>(body)
-        .ok()
-        .and_then(|value| serde_json::to_string_pretty(&value).ok())
-        .unwrap_or_else(|| body.to_owned())
-}
-
 fn wrapped_lines(text: &str, per_line: usize) -> i32 {
     let total: usize = text
         .lines()
@@ -210,7 +191,7 @@ fn wrapped_lines(text: &str, per_line: usize) -> i32 {
     i32::try_from(total.max(1)).unwrap_or(i32::MAX)
 }
 
-pub fn open_body_px(face: Face, opened: &Opened, claims: i32, room: f32) -> f32 {
+pub fn open_body_px(face: Face, opened: &Opened, room: f32) -> f32 {
     let note = if opened.more.is_empty() {
         0.0
     } else {
@@ -219,14 +200,9 @@ pub fn open_body_px(face: Face, opened: &Opened, claims: i32, room: f32) -> f32 
     match face {
         Face::Thumb | Face::FoundThumb => OPEN_THUMB + GAP + NOTE,
         Face::Words(_) | Face::Found => LINE * opened.lines as f32 + note,
-        Face::Block(_) | Face::Keys(_) | Face::Link if claims > 0 => {
-            BLOCK_PAD + MONO_LINE * claims as f32
-        }
-        Face::Block(_) | Face::Keys(_) | Face::Link => {
-            BLOCK_PAD + MONO_LINE * opened.lines as f32 + note
-        }
+        Face::Block(_) | Face::Link => BLOCK_PAD + MONO_LINE * opened.lines as f32 + note,
         Face::Paint => OPEN_PAINT,
-        Face::File | Face::Media => room,
+        Face::File => room,
     }
 }
 

@@ -121,7 +121,7 @@ fn nothing_readable_is_nothing_to_write() {
 
 #[test]
 fn pasting_as_plain_text_is_a_rendered_form_written_like_any_item() {
-    use cp_core::paste_as::{Form, render};
+    use cp_core::paste_as::plainest;
     let item = Item {
         kind: Some(cp_core::kind::Kind::Text),
         formats: vec![
@@ -129,9 +129,8 @@ fn pasting_as_plain_text_is_a_rendered_form_written_like_any_item() {
             inline("CF_UNICODETEXT", &utf16_of("hello")),
         ],
     };
-    let plain = render(Form::PlainText, &crate::content::content_of(&item, None))
-        .expect("there is text")
-        .into_item();
+    let plain =
+        Item::plain(&plainest(&crate::content::content_of(&item, None)).expect("there is text"));
     let written: Vec<(u32, Vec<u8>)> = plain
         .formats
         .iter()
@@ -145,10 +144,7 @@ fn pasting_as_plain_text_is_a_rendered_form_written_like_any_item() {
         formats: vec![inline(PNG, &[1, 2, 3])],
     };
     assert_eq!(
-        render(
-            Form::PlainText,
-            &crate::content::content_of(&only_image, None)
-        ),
+        plainest(&crate::content::content_of(&only_image, None)),
         None,
         "with no plain text there is no plain form to offer"
     );

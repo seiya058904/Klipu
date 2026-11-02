@@ -3,19 +3,10 @@ use crate::model::Metrics;
 use cp_store::{Filter, Store};
 
 const SIZES: Metrics = Metrics {
-    body_json: 59.0,
-    body_link: 36.0,
     body_folder: 36.0,
     body_papers: 40.0,
-    body_media: 36.0,
     head: 23.0,
-    tall: 146.0,
-    json: 112.0,
     plain: 86.0,
-    mixed: 60.0,
-    found: 68.0,
-    frame: 50.0,
-    line: 18.0,
     shut_lines: 2,
 };
 
@@ -26,7 +17,7 @@ fn grid_over(count: usize) -> (Rc<Rows>, Rc<Paired>) {
             .insert_text(&format!("u{at}"), &format!("imagen {at}"), at as i64)
             .expect("insert");
     }
-    let rows = Rows::open(Rc::new(store), Filter::default(), 1_000, SIZES, false, None);
+    let rows = Rows::open(Rc::new(store), Filter::default(), 1_000, SIZES, None);
     let grid = Paired::over(rows.clone());
     (rows, grid)
 }

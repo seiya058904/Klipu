@@ -1,10 +1,6 @@
 import { Card, Chip } from "types.slint";
-import { LinkBody } from "bodies_link.slint";
 import { FolderBody } from "bodies_folder.slint";
 import { PapersBody } from "bodies_papers.slint";
-import { MediaBody } from "bodies_media.slint";
-import { JsonBody } from "bodies.slint";
-import { TokenBody } from "bodies_token.slint";
 import { Theme, Hue } from "theme.slint";
 import { Words } from "words.slint";
 
@@ -70,10 +66,8 @@ export component Pill inherits Rectangle {
     accessible-role: AccessibleRole.button;
     accessible-label: chip.label;
     callback chosen(string, bool);
-    callback asked-ways(string);
-    property <bool> shows-arrow: chip.selected && chip.has-ways;
     height: 24px;
-    width: content.preferred-width + (shows-arrow ? 16px : 0px);
+    width: content.preferred-width;
     border-radius: 12px;
     background: chip.selected ? Theme.selected : touch.has-hover ? Theme.hover : Theme.field;
     border-width: 1px;
@@ -105,22 +99,6 @@ export component Pill inherits Rectangle {
         clicked => { root.chosen(chip.key, touch.adding); }
     }
 
-    if shows-arrow : Rectangle {
-        x: parent.width - 17px;
-        width: 17px;
-        height: parent.height;
-        Image {
-            source: @image-url("../assets/icons/chevron-down.svg");
-            width: 11px;
-            height: 11px;
-            colorize: arrow.has-hover ? Theme.body : Theme.accent;
-            x: 0;
-            y: (parent.height - 11px) / 2;
-        }
-        arrow := TouchArea {
-            clicked => { root.asked-ways(chip.key); }
-        }
-    }
 }
 
 export component Tag inherits Rectangle {
@@ -250,14 +228,7 @@ component KeyChip inherits Rectangle {
 export component CardView inherits Rectangle {
     in property <Card> card;
     in property <string> layout;
-    in property <bool> plain-way;
     in property <bool> one-kind;
-    property <bool> mixed: !plain-way;
-    property <string> shown-as: mixed ? card.kind : layout;
-    property <bool> unfolded: mixed && open;
-    property <bool> type-body: !mixed && !open;
-    property <bool> special: card.paints || (!plain-way && (layout == "json" || layout == "video"
-        || layout == "audio" || layout == "papers" || layout == "folder" || layout == "link"));
     in property <bool> current;
     in property <int> naming: -1;
     property <bool> being-named: root.naming == card.id;
@@ -266,7 +237,6 @@ export component CardView inherits Rectangle {
     in property <bool> quiet;
     callback copy(int);
     callback open-asked(int);
-    callback forms(int);
     callback paste(int);
     callback plain(int);
     callback edit(int);
@@ -320,12 +290,12 @@ export component CardView inherits Rectangle {
 
     VerticalLayout {
         padding: 10px;
-        padding-top: mixed ? 9px : 10px;
-        padding-left: mixed ? 12px : 10px;
-        padding-right: mixed ? 12px : 10px;
+        padding-top: 9px;
+        padding-left: 12px;
+        padding-right: 12px;
         spacing: 8px;
 
-        if mixed : VerticalLayout {
+        VerticalLayout {
             spacing: 6px;
 
             HorizontalLayout {
@@ -384,18 +354,6 @@ export component CardView inherits Rectangle {
                     vertical-alignment: center;
                 }
                 if card.aside-said == "" : Rectangle { horizontal-stretch: 1; }
-                if card.badge != "" : Rectangle {
-                    width: badge-pill.preferred-width;
-                    height: 15px;
-                    border-radius: Theme.radius-badge;
-                    background: Theme.tile;
-                    y: (parent.height - 15px) / 2;
-                    badge-pill := HorizontalLayout {
-                        padding-left: 5px;
-                        padding-right: 5px;
-                        Text { text: card.badge; color: Hue.of(card.kind); font-size: Theme.fs-caption; font-weight: 600; vertical-alignment: center; }
-                    }
-                }
                 if card.alert != "" : Rectangle {
                     width: alert-pill.preferred-width;
                     height: 15px;
@@ -427,7 +385,6 @@ export component CardView inherits Rectangle {
                     if card.can-open && !card.broken : Action { icon: @image-url("../assets/icons/external-link.svg"); says: Words.open-it; pressed => { root.open-asked(card.id); } }
                     Action { icon: @image-url("../assets/icons/pencil.svg"); says: Words.name-it; pressed => { root.edit(card.id); } }
                     if !card.broken : Action { icon: @image-url("../assets/icons/copy.svg"); says: Words.copy-it; pressed => { root.copy(card.id); } }
-                    if !card.broken : Action { icon: @image-url("../assets/icons/arrow-right-to-line.svg"); says: Words.paste-as; marked: true; pressed => { root.forms(card.id); } }
                     Action { icon: card.pinned ? @image-url("../assets/icons/pin-off.svg") : @image-url("../assets/icons/pin.svg"); says: card.pinned ? Words.unpin : Words.pin; pressed => { root.pin(card.id, !card.pinned); } }
                     Action { icon: @image-url("../assets/icons/trash-2.svg"); says: Words.remove; hot: Theme.danger; pressed => { root.remove(card.id); } }
                 }
@@ -451,19 +408,6 @@ export component CardView inherits Rectangle {
                     background: Theme.tile;
                     Image { source: card.thumb; width: parent.width; height: parent.height; image-fit: cover; }
                     if !card.has-thumb : Unpictured { }
-                    if card.media-clock != "" : Rectangle {
-                        x: parent.width - self.width - 4px;
-                        y: parent.height - self.height - 4px;
-                        width: thumb-clock.preferred-width;
-                        height: 15px;
-                        border-radius: Theme.radius-badge;
-                        background: #000000.with-alpha(0.66);
-                        thumb-clock := HorizontalLayout {
-                            padding-left: 4px;
-                            padding-right: 4px;
-                            Text { text: card.media-clock; color: #FFFFFF; font-size: Theme.fs-caption; vertical-alignment: center; }
-                        }
-                    }
                 }
                 VerticalLayout {
                     alignment: center;
@@ -516,23 +460,13 @@ export component CardView inherits Rectangle {
                 }
             }
 
-            if !open && card.face == "keys" : Text {
-                text: card.shape-keys;
-                height: card.shut-lines * 16px;
-                color: Theme.mono;
-                font-size: Theme.fs-small;
-                font-family: Theme.mono-font;
-                wrap: word-wrap;
-                overflow: elide;
-            }
-
             if !open && card.face == "link" : HorizontalLayout {
                 height: 19px;
-                if layout != "link" : Text { text: card.link-domain; color: Theme.body; font-size: Theme.fs-body; font-weight: 600; wrap: no-wrap; vertical-alignment: center; }
-                Text { text: card.link-path; color: layout == "link" ? Theme.body : Theme.muted; font-size: Theme.fs-body; overflow: elide; wrap: no-wrap; horizontal-stretch: 1; vertical-alignment: center; }
+                Text { text: card.link-domain; color: Theme.body; font-size: Theme.fs-body; font-weight: 600; wrap: no-wrap; vertical-alignment: center; }
+                Text { text: card.link-path; color: Theme.muted; font-size: Theme.fs-body; overflow: elide; wrap: no-wrap; horizontal-stretch: 1; vertical-alignment: center; }
             }
 
-            if !open && (card.face == "file" || card.face == "media") : HorizontalLayout {
+            if !open && card.face == "file" : HorizontalLayout {
                 height: 34px;
                 spacing: 10px;
                 Rectangle {
@@ -610,20 +544,7 @@ export component CardView inherits Rectangle {
                 overflow: elide;
             }
 
-            if open && card.claims : Rectangle {
-                height: 12px + card.claim-rows * 17px;
-                border-radius: Theme.radius-inset;
-                background: Theme.tile;
-                TokenBody {
-                    x: 8px;
-                    y: 6px;
-                    width: parent.width - 16px;
-                    height: parent.height - 12px;
-                    card: card;
-                }
-            }
-
-            if open && !card.claims && (card.face == "block" || card.face == "keys" || card.face == "link") : Rectangle {
+            if open && (card.face == "block" || card.face == "link") : Rectangle {
                 height: 12px + card.open-lines * 17px;
                 border-radius: Theme.radius-inset;
                 background: Theme.tile;
@@ -672,178 +593,15 @@ export component CardView inherits Rectangle {
 
             if open && card.face == "file" && card.kind == "folder" : FolderBody { card: card; }
             if open && card.face == "file" && card.kind != "folder" : PapersBody { card: card; }
-            if open && card.face == "media" : MediaBody { card: card; }
 
             if open && !card.broken : HorizontalLayout {
                 height: 22px;
                 spacing: 6px;
                 KeyChip { keys: "⏎"; says: Words.paste-it; on: true; pressed => { root.paste(card.id); } }
                 KeyChip { keys: "⇧⏎"; says: Words.paste-plain; pressed => { root.plain(card.id); } }
-                KeyChip { keys: "Alt ⏎"; says: Words.paste-as-short; pressed => { root.forms(card.id); } }
                 Rectangle { horizontal-stretch: 1; }
             }
         }
 
-        if !mixed && card.has-thumb : Rectangle {
-            height: 96px;
-            border-radius: 8px;
-            clip: true;
-            background: transparent;
-            Image { source: card.thumb; width: parent.width; height: parent.height; image-fit: contain; }
-
-            if card.media-clock != "" : Rectangle {
-                x: parent.width - self.width - 6px;
-                y: parent.height - self.height - 6px;
-                width: clock-row.preferred-width;
-                height: 18px;
-                border-radius: Theme.radius-badge;
-                background: #000000.with-alpha(0.66);
-                clock-row := HorizontalLayout {
-                    padding-left: 6px;
-                    padding-right: 6px;
-                    Text {
-                        text: card.media-clock;
-                        color: #FFFFFF;
-                        font-size: Theme.fs-meta;
-                        vertical-alignment: center;
-                    }
-                }
-            }
-        }
-
-        if !mixed && !card.has-thumb && card.found && !open : HorizontalLayout {
-            height: 18px;
-            spacing: 0px;
-            alignment: start;
-            Text { text: card.lead; color: Theme.muted; font-size: Theme.fs-body; vertical-alignment: center; }
-            Text { text: card.hit; color: Theme.accent; font-size: Theme.fs-body; font-weight: 600; vertical-alignment: center; }
-            Text { text: card.tail; color: Theme.body; font-size: Theme.fs-body; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
-        }
-
-        if !mixed && card.paints && !card.has-thumb && !open : HorizontalLayout {
-            spacing: 9px;
-            Rectangle {
-                width: 34px;
-                height: 34px;
-                border-radius: 7px;
-                background: card.paint;
-                border-width: 1px;
-                border-color: Theme.selected-edge;
-                y: 0;
-            }
-            Text {
-                text: card.squeezed;
-                color: Theme.body;
-                font-size: Theme.fs-body;
-                font-family: Theme.mono-font;
-                horizontal-stretch: 1;
-                overflow: elide;
-                wrap: no-wrap;
-                vertical-alignment: center;
-            }
-        }
-
-        if !card.has-thumb && type-body && !plain-way && shown-as == "json" : JsonBody {
-            card: card;
-        }
-
-        if !card.has-thumb && type-body && !plain-way && (shown-as == "video" || shown-as == "audio") : MediaBody {
-            card: card;
-        }
-
-        if !card.has-thumb && type-body && !plain-way && (shown-as == "papers" || shown-as == "file") : PapersBody {
-            card: card;
-        }
-
-        if !card.has-thumb && type-body && !plain-way && shown-as == "folder" : FolderBody {
-            card: card;
-        }
-
-        if !card.has-thumb && type-body && !plain-way && shown-as == "link" : LinkBody {
-            card: card;
-        }
-
-        if !mixed && !card.has-thumb && (!card.found || open) && !(special && !open) : Text {
-            text: open ? card.body : card.squeezed;
-            color: card.blank ? Theme.muted : card.mono ? Theme.mono : Theme.body;
-            font-size: card.mono ? Theme.fs-small : Theme.fs-body;
-            font-family: card.mono ? Theme.mono-font : Theme.font;
-            overflow: elide;
-            height: open ? (card.claims ? Theme.line : card.body-lines * Theme.line) : 36px;
-            wrap: card.claims && open ? no-wrap : (card.mono ? char-wrap : word-wrap);
-        }
-
-        if !mixed && card.claims && open : TokenBody { card: card; }
-
-        if !mixed : HorizontalLayout {
-            height: 16px;
-            spacing: 6px;
-            alignment: stretch;
-            if card.badge != "" : Rectangle {
-                width: badge-row.preferred-width;
-                height: 15px;
-                border-radius: Theme.radius-badge;
-                background: Theme.tile;
-                y: (parent.height - 15px) / 2;
-                badge-row := HorizontalLayout {
-                    padding-left: 5px;
-                    padding-right: 5px;
-                    Text { text: card.badge; color: Theme.muted; font-size: Theme.fs-caption; font-weight: 600; vertical-alignment: center; }
-                }
-            }
-            if card.alert != "" : Rectangle {
-                width: alert-row.preferred-width;
-                height: 15px;
-                border-radius: Theme.radius-badge;
-                background: Theme.alert-back;
-                y: (parent.height - 15px) / 2;
-                alert-row := HorizontalLayout {
-                    padding-left: 5px;
-                    padding-right: 5px;
-                    Text { text: card.alert; color: Theme.alert-ink; font-size: Theme.fs-caption; font-weight: 600; vertical-alignment: center; }
-                }
-            }
-            Rectangle {
-                width: 7px;
-                height: 7px;
-                border-radius: 2px;
-                background: Hue.of(card.kind);
-                y: (parent.height - 7px) / 2;
-            }
-            if being-named : NameField {
-                seed: card.name;
-                room: Words.name-room;
-                words-size: 11px;
-                width: 160px;
-                done(said) => { root.named(card.id, said); }
-                gave-up => { root.naming-dropped(); }
-            }
-            if !being-named : Text {
-                text: card.name != "" ? card.name : card.title;
-                color: card.broken ? Theme.danger : Theme.title;
-                font-size: Theme.fs-meta;
-                font-weight: Theme.fw-title;
-                overflow: elide;
-                wrap: no-wrap;
-                vertical-alignment: center;
-            }
-            if card.source != "" : Text { text: "· " + card.source; color: Theme.muted; font-size: Theme.fs-meta; vertical-alignment: center; }
-            if card.times != "" : Text { text: "×" + card.times; color: Theme.muted; font-size: Theme.fs-meta; vertical-alignment: center; }
-            if card.pinned : Icon { source: @image-url("../assets/icons/pin.svg"); width: 10px; height: 10px; tint: Theme.accent-dim; y: (parent.height - 10px) / 2; }
-            Rectangle { horizontal-stretch: 1; }
-            HorizontalLayout {
-                spacing: 2px;
-                alignment: center;
-                opacity: lit ? 1.0 : 0.0;
-                animate opacity { duration: 120ms; easing: ease-out; }
-                if card.can-open && !card.broken : Action { icon: @image-url("../assets/icons/external-link.svg"); says: Words.open-it; awake: lit; pressed => { root.open-asked(card.id); } }
-                Action { icon: @image-url("../assets/icons/pencil.svg"); says: Words.name-it; awake: lit; pressed => { root.edit(card.id); } }
-                if !card.broken : Action { icon: @image-url("../assets/icons/copy.svg"); says: Words.copy-it; awake: lit; pressed => { root.copy(card.id); } }
-                if !card.broken : Action { icon: @image-url("../assets/icons/arrow-right-to-line.svg"); says: Words.paste-as; awake: lit; marked: true; pressed => { root.forms(card.id); } }
-                Action { icon: card.pinned ? @image-url("../assets/icons/pin-off.svg") : @image-url("../assets/icons/pin.svg"); says: card.pinned ? Words.unpin : Words.pin; awake: lit; pressed => { root.pin(card.id, !card.pinned); } }
-                Action { icon: @image-url("../assets/icons/trash-2.svg"); says: Words.remove; hot: Theme.danger; awake: lit; pressed => { root.remove(card.id); } }
-            }
-            Text { text: card.age; color: Theme.muted; font-size: Theme.fs-meta; vertical-alignment: center; }
-        }
     }
 }

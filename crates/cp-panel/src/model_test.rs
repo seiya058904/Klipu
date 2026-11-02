@@ -1,19 +1,10 @@
 use super::*;
 
 const SIZES: Metrics = Metrics {
-    body_json: 59.0,
-    body_link: 36.0,
     body_folder: 36.0,
     body_papers: 40.0,
-    body_media: 36.0,
     head: 23.0,
-    tall: 146.0,
-    json: 112.0,
     plain: 86.0,
-    mixed: 60.0,
-    found: 68.0,
-    frame: 50.0,
-    line: 18.0,
     shut_lines: 2,
 };
 
@@ -28,63 +19,7 @@ fn store_with(count: usize) -> Rc<Store> {
 }
 
 fn open(store: Rc<Store>, now: i64) -> Rc<Rows> {
-    Rows::open(store, Filter::default(), now, SIZES, false, None)
-}
-
-fn store_of_videos(count: usize) -> Rc<Store> {
-    let store = Store::in_memory().expect("esquema");
-    for at in 0..count {
-        let item = cp_core::item::Item {
-            kind: Some(cp_core::kind::Kind::Video),
-            formats: vec![cp_core::item::Format {
-                id: "public.mpeg-4".into(),
-                payload: cp_core::item::Payload::Inline(vec![at as u8; 8]),
-            }],
-        };
-        store
-            .insert_item(&format!("u{at}"), &item, "", at as i64)
-            .expect("insert");
-    }
-    Rc::new(store)
-}
-
-const A_TOKEN: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjbG91ZGZsYXJlIiwic3ViIjoicm9kcmlnbyIsImF1ZCI6ImNvcHlwYXN0ZSIsImV4cCI6MTc5MDk1MjkxNiwiaWF0IjoxNzkwOTQ1MTE2LCJzY29wZSI6InJlYWQgd3JpdGUiLCJyb2xlIjoiYWRtaW4ifQ.bWFyY2EtZGUtcHJ1ZWJhLW5vLXZhbGlkYQ";
-
-fn store_of_tokens() -> Rc<Store> {
-    let store = Store::in_memory().expect("esquema");
-    store.insert_text("token", A_TOKEN, 1).expect("insert");
-    Rc::new(store)
-}
-
-fn only_tokens(store: Rc<Store>, now: i64) -> Rc<Rows> {
-    let filter = Filter {
-        kinds: vec![cp_core::kind::Kind::Token],
-        ..Default::default()
-    };
-    Rows::open(store, filter, now, SIZES, false, None)
-}
-
-#[test]
-fn an_open_token_gets_room_for_the_table_of_claims_it_draws() {
-    let rows = only_tokens(store_of_tokens(), 1_790_945_716_000);
-    assert_eq!(rows.row_count(), 1, "el token se clasifica como token");
-    let shut = rows.span_of(0).expect("la fila").1;
-    rows.open_at(Some(0));
-    let open = rows.span_of(0).expect("la fila").1;
-    let claims = 7.0;
-    assert_eq!(
-        open,
-        crate::face::open_px(crate::face::BLOCK_PAD + claims * crate::face::MONO_LINE),
-        "abierta debe caber la tabla entera, y midio {open} contra {shut} cerrada"
-    );
-}
-
-fn only_tall(store: Rc<Store>, now: i64) -> Rc<Rows> {
-    let filter = Filter {
-        kinds: vec![cp_core::kind::Kind::Video],
-        ..Default::default()
-    };
-    Rows::open(store, filter, now, SIZES, true, None)
+    Rows::open(store, Filter::default(), now, SIZES, None)
 }
 
 #[test]
@@ -147,35 +82,9 @@ fn a_query_that_matches_nothing_is_an_empty_model_not_an_error() {
         query: Some("nada-de-esto".into()),
         ..Default::default()
     };
-    let rows = Rows::open(store_with(10), filter, 0, SIZES, false, None);
+    let rows = Rows::open(store_with(10), filter, 0, SIZES, None);
     assert_eq!(rows.row_count(), 0);
     assert!(rows.exhausted.get());
-}
-
-#[test]
-fn every_row_knows_where_it_starts_and_a_thumbnail_makes_it_taller() {
-    let store = store_of_videos(3);
-    store.set_thumb(2, Some("miniatura.png"), 1).expect("thumb");
-    let rows = only_tall(store, 0);
-    assert_eq!(rows.span_of(0), Some((0.0, SIZES.plain)));
-    assert_eq!(rows.span_of(1), Some((SIZES.plain, SIZES.tall)));
-    assert_eq!(
-        rows.span_of(2),
-        Some((SIZES.plain + SIZES.tall, SIZES.plain))
-    );
-    assert_eq!(rows.span_of(3), None, "no hay cuarta fila");
-}
-
-#[test]
-fn a_thumbnail_that_does_not_load_gives_its_height_back_to_the_rows_below() {
-    let store = store_of_videos(3);
-    store.set_thumb(3, Some("no-existe.png"), 2).expect("thumb");
-    let rows = only_tall(store, 0);
-    assert_eq!(rows.span_of(0), Some((0.0, SIZES.tall)));
-    let card = rows.row_data(0).expect("fila");
-    assert!(!card.has_thumb, "the thumbnail is not on disk");
-    assert_eq!(rows.span_of(0), Some((0.0, SIZES.plain)));
-    assert_eq!(rows.span_of(1), Some((SIZES.plain, SIZES.plain)));
 }
 
 #[test]
@@ -224,37 +133,6 @@ fn the_open_row_grows_what_its_text_asks_and_nobody_else_pays() {
 }
 
 #[test]
-fn a_thumbnail_that_failed_does_not_get_its_height_back() {
-    let store = store_of_videos(3);
-    store.set_thumb(3, Some("no-existe.png"), 2).expect("thumb");
-    let rows = only_tall(store, 0);
-    assert!(rows.row_data(0).is_some_and(|card| !card.has_thumb));
-    assert_eq!(rows.span_of(0), Some((0.0, SIZES.plain)));
-
-    rows.open_at(Some(0));
-    rows.open_at(None);
-    assert_eq!(
-        rows.span_of(0),
-        Some((0.0, SIZES.plain)),
-        "closing it does not give back the height of a thumbnail that is not there"
-    );
-    assert_eq!(rows.span_of(1), Some((SIZES.plain, SIZES.plain)));
-}
-
-#[test]
-fn a_row_with_a_thumbnail_does_not_open_in_its_own_view() {
-    let store = store_of_videos(2);
-    store.set_thumb(2, Some("miniatura.png"), 1).expect("thumb");
-    let rows = only_tall(store, 0);
-    rows.open_at(Some(0));
-    assert_eq!(
-        rows.span_of(0),
-        Some((0.0, SIZES.tall)),
-        "la miniatura ya ocupa lo suyo"
-    );
-}
-
-#[test]
 fn a_row_in_the_mixed_list_is_as_tall_as_its_face() {
     let store = store_with(2);
     store.set_thumb(2, Some("miniatura.png"), 1).expect("thumb");
@@ -298,68 +176,6 @@ fn revealing_a_row_only_scrolls_when_the_row_is_out_of_sight() {
     assert_eq!(reveal(500.0, 124.0, 0.0, 0.0), 0.0, "sin alto no se decide");
 }
 
-#[test]
-fn a_json_only_list_gives_its_rows_the_taller_shut_height() {
-    let metrics = SIZES;
-    let general = Filter::default();
-    let only_json = Filter {
-        kinds: vec![cp_core::kind::Kind::Json],
-        ..Default::default()
-    };
-    let mixed = Filter {
-        kinds: vec![cp_core::kind::Kind::Json, cp_core::kind::Kind::Text],
-        ..Default::default()
-    };
-
-    assert_eq!(
-        shut_height_for(&general, &metrics, false),
-        60.0,
-        "mixed kinds share one height, so the list does not jump as you run down it"
-    );
-    assert_eq!(shut_height_for(&only_json, &metrics, false), 112.0);
-    assert_eq!(
-        shut_height_for(&only_json, &metrics, true),
-        86.0,
-        "read raw, a json row is as tall as any other"
-    );
-    assert_eq!(
-        shut_height_for(&mixed, &metrics, false),
-        60.0,
-        "two kinds is the general layout, and the general height"
-    );
-}
-
-#[test]
-fn only_the_views_that_use_meta_ask_the_store_for_any() {
-    let of = |kinds: Vec<cp_core::kind::Kind>| {
-        meta_keys_for(&Filter {
-            kinds,
-            ..Default::default()
-        })
-    };
-    assert_eq!(
-        of(vec![]),
-        &MIXED_KEYS,
-        "the general view shows a clock and a folder count on its second line, so it has to ask"
-    );
-    assert!(
-        of(vec![cp_core::kind::Kind::Json]).is_empty(),
-        "json parses the preview"
-    );
-    assert!(
-        of(vec![cp_core::kind::Kind::File]).is_empty(),
-        "the format is in the path"
-    );
-    assert_eq!(of(vec![cp_core::kind::Kind::Video]), &crate::media::KEYS);
-    assert_eq!(of(vec![cp_core::kind::Kind::Audio]), &crate::media::KEYS);
-    assert_eq!(of(vec![cp_core::kind::Kind::Folder]), &crate::folder::KEYS);
-    assert_eq!(
-        of(vec![cp_core::kind::Kind::Video, cp_core::kind::Kind::Audio]),
-        &MIXED_KEYS,
-        "two kinds is the general view, which asks for nothing"
-    );
-}
-
 fn grouped(group: &str) -> cp_store::Listed {
     cp_store::Listed {
         id: 1,
@@ -378,27 +194,6 @@ fn grouped(group: &str) -> cp_store::Listed {
         group: group.to_owned(),
         snippet: None,
     }
-}
-
-#[test]
-fn the_first_row_of_a_group_is_the_one_that_heads_it() {
-    let linked = Filter {
-        kinds: vec![cp_core::kind::Kind::Link],
-        order: cp_store::Order::ByGroup,
-        ..Default::default()
-    };
-    let rows = [
-        grouped("docs.rs"),
-        grouped("docs.rs"),
-        grouped("github.com"),
-    ];
-    assert!(heads_group(&linked, &rows, 0), "the first row always heads");
-    assert!(
-        !heads_group(&linked, &rows, 1),
-        "same group as the one above"
-    );
-    assert!(heads_group(&linked, &rows, 2), "the group changed");
-    assert!(!heads_group(&linked, &rows, 9), "there is no row there");
 }
 
 #[test]
@@ -452,7 +247,7 @@ fn the_row_that_heads_a_group_is_taller_by_exactly_its_heading() {
         order: cp_store::Order::ByGroup,
         ..Default::default()
     };
-    let rows = Rows::open(Rc::new(store), grouped, 1_000, SIZES, false, None);
+    let rows = Rows::open(Rc::new(store), grouped, 1_000, SIZES, None);
     assert_eq!(rows.row_count(), 3);
     let mut heading = 0;
     for at in 0..rows.row_count() {
@@ -491,7 +286,7 @@ fn a_filter_on_one_kind_still_comes_back_grouped() {
         order: cp_store::Order::ByGroup,
         ..Default::default()
     };
-    let rows = Rows::open(Rc::new(store), linked, 1_000, SIZES, false, None);
+    let rows = Rows::open(Rc::new(store), linked, 1_000, SIZES, None);
     assert_eq!(rows.row_count(), 3, "the three links came back");
     let first = rows.row_data(0).expect("a card");
     assert!(first.heads_group, "the first link heads its domain");
@@ -523,33 +318,9 @@ fn by_group() -> Filter {
 }
 
 #[test]
-fn the_heading_a_card_draws_is_the_one_its_row_was_given_room_for() {
-    let store = grouped_store(&[("a.com", 3), ("b.com", 2), ("c.com", 4)]);
-    let rows = Rows::open(store, by_group(), 1_000, SIZES, false, None);
-    let total = rows.row_count();
-    assert!(total >= 9, "{total}");
-
-    for index in 0..total {
-        let card = rows.row_data(index).expect("a card");
-        let (_, span) = rows.span_of(index).expect("a span");
-        let body = span - if card.heads_group { SIZES.head } else { 0.0 };
-        assert!(
-            body > 0.0,
-            "row {index} was given {span} px and claims a {} px heading, which leaves nothing for the card",
-            SIZES.head
-        );
-        assert_eq!(
-            span,
-            body + if card.heads_group { SIZES.head } else { 0.0 },
-            "row {index}: the room reserved and the heading drawn have to agree"
-        );
-    }
-}
-
-#[test]
 fn exactly_one_card_per_group_carries_the_heading() {
     let store = grouped_store(&[("a.com", 3), ("b.com", 2), ("c.com", 4)]);
-    let rows = Rows::open(store, by_group(), 1_000, SIZES, false, None);
+    let rows = Rows::open(store, by_group(), 1_000, SIZES, None);
     let mut heading_at = Vec::new();
     for index in 0..rows.row_count() {
         if rows.row_data(index).expect("a card").heads_group {
@@ -566,7 +337,7 @@ fn exactly_one_card_per_group_carries_the_heading() {
 #[test]
 fn the_room_a_heading_row_gets_is_the_card_plus_the_heading() {
     let store = grouped_store(&[("a.com", 2), ("b.com", 2)]);
-    let rows = Rows::open(store, by_group(), 1_000, SIZES, false, None);
+    let rows = Rows::open(store, by_group(), 1_000, SIZES, None);
     let mut with_heading = None;
     let mut without = None;
     for index in 0..rows.row_count() {
@@ -612,24 +383,6 @@ fn a_thumbnail_opened_in_the_mixed_list_grows_like_everything_else_there() {
 }
 
 #[test]
-fn a_json_opened_in_the_mixed_list_reserves_the_body_it_draws() {
-    let store = Store::in_memory().expect("esquema");
-    store
-        .insert_text("j", r#"{"a": 1, "b": {"c": 2}}"#, 1)
-        .expect("insert");
-    let rows = open(Rc::new(store), 2);
-    let shut = rows.span_of(0).expect("la fila").1;
-    assert_eq!(shut, crate::face::Face::Keys(1).shut_px());
-    rows.open_at(Some(0));
-    let open = rows.span_of(0).expect("la fila").1;
-    assert!(
-        open > shut + crate::face::KEYS_ROW,
-        "unfolded in the general list the card draws its own body, and a height that does not \
-         count it cuts the card: {open} against {shut}"
-    );
-}
-
-#[test]
 fn a_card_carries_the_two_heights_the_model_believes() {
     let rows = open(store_with(3), 0);
     let card = rows.row_data(0).expect("una tarjeta");
@@ -639,34 +392,6 @@ fn a_card_carries_the_two_heights_the_model_believes() {
         "the delegate draws with this number, so it has to be the one the model reserved"
     );
     assert!(card.open_px > 0.0);
-}
-
-#[test]
-fn a_row_whose_thumbnail_will_not_draw_carries_the_height_it_really_takes() {
-    let store = store_with(2);
-    store
-        .set_thumb(2, Some("no-existe-esta-miniatura.png"), 1)
-        .expect("thumb");
-    let rows = only_tall(store.clone(), 0);
-    let _ = rows.row_data(0);
-
-    let rows = Rows::open(store, Filter::default(), 0, SIZES, true, None);
-    let card = rows.row_data(0).expect("una tarjeta");
-    assert!(
-        !card.has_thumb,
-        "el archivo no esta, asi que no hay miniatura"
-    );
-    assert_ne!(
-        card.shut_px, SIZES.tall,
-        "the delegate draws with this number: promising the height of a picture that never \
-         appears leaves a hole and throws the scrolling off by sixty pixels on every such row"
-    );
-    assert_eq!(
-        card.shut_px,
-        rows.span_of(0).expect("la fila").1,
-        "what the card carries and what the model reserved are the same number or neither can be \
-         trusted"
-    );
 }
 
 #[test]
@@ -702,7 +427,6 @@ fn the_general_list_is_grouped_by_when_it_was_copied() {
         Filter::default(),
         noon,
         SIZES,
-        false,
         Some(Rc::new(|_| 0)),
     );
     let cards: Vec<_> = (0..rows.row_count())
@@ -731,31 +455,6 @@ fn the_general_list_is_grouped_by_when_it_was_copied() {
 }
 
 #[test]
-fn a_search_or_the_pinned_list_is_not_grouped_by_time() {
-    let store = store_with(3);
-    let searching = Filter {
-        query: Some("elemento".into()),
-        ..Default::default()
-    };
-    assert!(!by_time(&searching, false));
-    let pinned = Filter {
-        pinned_only: true,
-        ..Default::default()
-    };
-    assert!(!by_time(&pinned, false));
-    assert!(by_time(&Filter::default(), false));
-    assert!(
-        !by_time(&Filter::default(), true),
-        "the plain way has no groups"
-    );
-    let rows = Rows::open(store, Filter::default(), 10, SIZES, false, None);
-    assert!(
-        !rows.row_data(0).expect("card").heads_group,
-        "without a clock there is nothing to group by"
-    );
-}
-
-#[test]
 fn a_list_of_pictures_wears_the_card_of_the_general_view() {
     let store = Store::in_memory().expect("esquema");
     let item = cp_core::item::Item {
@@ -771,7 +470,7 @@ fn a_list_of_pictures_wears_the_card_of_the_general_view() {
         kinds: vec![cp_core::kind::Kind::Image],
         ..Default::default()
     };
-    let rows = Rows::open(Rc::new(store), filter, 2, SIZES, false, None);
+    let rows = Rows::open(Rc::new(store), filter, 2, SIZES, None);
     assert_eq!(
         rows.span_of(0),
         Some((0.0, crate::face::Face::Thumb.shut_px()))
@@ -803,7 +502,7 @@ fn a_card_whose_file_is_gone_opens_without_the_keys_to_paste_it() {
         broken: cp_store::Broken::Shown,
         ..Default::default()
     };
-    let rows = Rows::open(Rc::new(store), shown, 2, SIZES, false, None);
+    let rows = Rows::open(Rc::new(store), shown, 2, SIZES, None);
     rows.open_at(Some(0));
     let open = rows.span_of(0).expect("la fila").1;
     let card = rows.row_data(0).expect("card");
@@ -889,40 +588,6 @@ fn png_in(dir: &std::path::Path) -> String {
         .save(&path)
         .expect("drawn");
     path.to_string_lossy().into_owned()
-}
-
-#[test]
-fn a_thumbnail_that_lands_after_the_card_redraws_that_card() {
-    let (store, id) = store_with_a_picture();
-    let rows = open(store.clone(), 10);
-    let at = rows.index_of(id).expect("the picture is listed");
-    let waiting = rows.row_data(at).expect("a card");
-    assert!(!waiting.has_thumb);
-    assert_eq!(waiting.face.as_str(), "thumb", "it already has the shape");
-    let before = rows.span_of(at).expect("a span");
-    let told = Rc::new(RefCell::new(Vec::new()));
-    let seen = told.clone();
-    let watched =
-        slint::FilterModel::new(slint::ModelRc::from(rows.clone()), move |card: &Card| {
-            seen.borrow_mut().push(card.has_thumb);
-            true
-        });
-    assert_eq!(watched.row_count(), rows.row_count());
-    told.borrow_mut().clear();
-    let dir = tempfile::tempdir().expect("a folder");
-    store
-        .set_thumb(id, Some(&png_in(dir.path())), 3)
-        .expect("thumb");
-    assert!(renew_in(&slint::ModelRc::from(rows.clone()), id));
-    assert_eq!(
-        *told.borrow(),
-        [true],
-        "the list was told and drew it again"
-    );
-    let drawn = rows.row_data(at).expect("a card");
-    assert!(drawn.has_thumb);
-    assert_eq!(drawn.face.as_str(), "thumb");
-    assert_eq!(rows.span_of(at), Some(before), "nothing below it moves");
 }
 
 #[test]

@@ -58,11 +58,11 @@ pub fn listen(
                         }
                     });
                 }
-                "plain" | "forms" => {
+                "plain" => {
                     let in_front = here::ahead_now(host);
                     let kept = shelf.renew();
                     crate::say::adopt_english(kept.english);
-                    let (aim, plain) = (ahead.clone(), said.trim() == "plain");
+                    let aim = ahead.clone();
                     let _ = ui.upgrade_in_event_loop(move |panel| {
                         let showing = panel.window().is_visible() || here::activated();
                         let before = aim.load(Ordering::Relaxed);
@@ -70,11 +70,7 @@ pub fn listen(
                         if showing {
                             vanish(&panel);
                         }
-                        if plain {
-                            panel.invoke_plain_asked();
-                        } else {
-                            panel.invoke_forms_asked();
-                        }
+                        panel.invoke_plain_asked();
                     });
                 }
                 "empty" => {
@@ -89,7 +85,6 @@ pub fn listen(
             }
         }
         let _ = ui.upgrade_in_event_loop(|panel| {
-            panel.invoke_quitting();
             if let Some(handle) = handle_of(panel.window()) {
                 here::ground(handle);
             }

@@ -1,8 +1,6 @@
 use std::time::Duration;
 
 pub const ENTRIES: &str = "entries";
-pub const KEYS: [&str; 1] = [ENTRIES];
-
 pub const PATIENCE: Duration = Duration::from_secs(3);
 pub const UP_TO: usize = 5_000;
 

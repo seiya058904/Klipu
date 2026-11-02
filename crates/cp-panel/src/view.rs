@@ -1,9 +1,7 @@
 use crate::age::age_text;
 use crate::{Card, Chip};
 use cp_core::kind::Kind;
-use cp_core::paste_as::Form;
 use cp_core::search::Excerpt;
-use cp_core::token::Claims;
 use cp_store::{Facet, Listed};
 
 pub type MetaOfOne = std::collections::HashMap<String, String>;
@@ -73,37 +71,15 @@ fn trim_left(lead: &str) -> String {
     format!("…{}", kept.trim_start())
 }
 
-pub fn badge_of(claims: Option<&Claims>) -> &'static str {
-    if claims.is_some() { "JWT" } else { "" }
-}
-
-pub fn alert_of(row: &Listed, claims: Option<&Claims>, now: i64) -> &'static str {
+pub fn alert_of(row: &Listed) -> &'static str {
     if row.broken_since.is_some() {
         return crate::say::pick("No encontrado", "Not found");
     }
-    let stale = claims
-        .and_then(|claims| claims.expired_by(now / 1_000))
-        .unwrap_or(false);
-    if stale {
-        crate::say::pick("CADUCADO", "EXPIRED")
-    } else {
-        ""
-    }
-}
-
-fn claims_in(row: &Listed) -> Option<Claims> {
-    (row.kind == Some(Kind::Token))
-        .then(|| cp_core::token::claims_of(&row.preview))
-        .flatten()
+    ""
 }
 
 pub fn card_of(row: &Listed, now: i64, meta: Option<&MetaOfOne>, most: i32) -> Card {
     let kind = row.kind.map(Kind::as_str).unwrap_or("text");
-    let claims = claims_in(row);
-    let token = (row.kind == Some(Kind::Token))
-        .then(|| crate::token::said_of(&row.preview, now, crate::say::in_english()))
-        .flatten()
-        .unwrap_or_default();
     let (clock, measures) = crate::media::said_in(meta);
     let link = (row.kind == Some(Kind::Link))
         .then(|| crate::link::parts_of(&row.preview))
@@ -112,15 +88,6 @@ pub fn card_of(row: &Listed, now: i64, meta: Option<&MetaOfOne>, most: i32) -> C
     let papers = (row.kind == Some(Kind::File))
         .then(|| crate::papers::papers_of(&row.preview))
         .flatten();
-    let shape = (row.kind == Some(Kind::Json))
-        .then(|| crate::shape::said_of(&row.preview, crate::say::in_english()))
-        .flatten()
-        .unwrap_or_else(|| crate::shape::Said {
-            root: String::new(),
-            counted: String::new(),
-            keys: String::new(),
-            pairs: String::new(),
-        });
     let body = body_of(row);
     let (lead, hit, tail) = match &row.snippet {
         Some(snippet) => parts_of(&snippet.excerpt),
@@ -128,8 +95,6 @@ pub fn card_of(row: &Listed, now: i64, meta: Option<&MetaOfOne>, most: i32) -> C
     };
     let headline = headline_of(row, &body, folder.as_ref());
     let knows = Knows {
-        shape: &shape,
-        token: &token,
         folder: folder.as_ref(),
         papers: papers.as_ref(),
         clock: &clock,
@@ -146,8 +111,6 @@ pub fn card_of(row: &Listed, now: i64, meta: Option<&MetaOfOne>, most: i32) -> C
     let face = face_for(row, row.thumb_path.is_some(), most);
     let (line_one, line_two) = crate::face::opening_of(&body);
     let mixed_aside = match row.kind {
-        Some(Kind::Json) => shape.counted.clone(),
-        Some(Kind::Token) => crate::face::aside_said(&[&token.who, &token.life]),
         Some(Kind::Folder) => crate::folder::said_in(meta, crate::say::in_english()),
         _ => String::new(),
     };
@@ -162,14 +125,10 @@ pub fn card_of(row: &Listed, now: i64, meta: Option<&MetaOfOne>, most: i32) -> C
     let aside_said =
         crate::face::aside_said(&[&mixed_aside, &source, &used_text(&times), &lines_said]);
     let opened = opened_for(row, face);
-    let claim_rows = i32::try_from(token.names.lines().count()).unwrap_or(0);
-    let claims_spoken = crate::token::spoken(&token);
     Card {
-        claims_spoken: claims_spoken.into(),
         opened: opened.text.into(),
         open_lines: opened.lines,
         more_said: opened.more.into(),
-        claim_rows,
         face: face.as_str().into(),
         shut_lines: face.lines(),
         line_one: line_one.into(),
@@ -181,27 +140,15 @@ pub fn card_of(row: &Listed, now: i64, meta: Option<&MetaOfOne>, most: i32) -> C
         under_named: under_line(&headline, &source, &times).into(),
         headline: headline.into(),
         name: row.label.clone().unwrap_or_default().into(),
-        claims: !token.names.is_empty(),
-        claim_names: token.names.into(),
-        claim_values: token.values.into(),
         title: label_of(row.kind).into(),
         source: source.into(),
         times: times.clone().into(),
         age: age_text(now, touched_of(row)).into(),
-        lines: open_lines_of(row, &body, now),
+        lines: lines_of(&body),
         shut_px: Default::default(),
         open_px: Default::default(),
         body_lines: lines_of(&body),
         squeezed: squeezed_of(&body).into(),
-        shape_root: shape.root.into(),
-        shape_said: shape.counted.into(),
-        shape_keys: if shape.pairs.is_empty() {
-            shape.keys
-        } else {
-            shape.pairs
-        }
-        .into(),
-        media_clock: clock.into(),
         media_measures: measures.into(),
         papers_format: papers
             .as_ref()
@@ -234,8 +181,7 @@ pub fn card_of(row: &Listed, now: i64, meta: Option<&MetaOfOne>, most: i32) -> C
             .into(),
         body: body.into(),
         found: !hit.is_empty(),
-        badge: badge_of(claims.as_ref()).into(),
-        alert: alert_of(row, claims.as_ref(), now).into(),
+        alert: alert_of(row).into(),
         lead: lead.into(),
         hit: hit.into(),
         tail: tail.into(),
@@ -255,53 +201,24 @@ pub fn card_of(row: &Listed, now: i64, meta: Option<&MetaOfOne>, most: i32) -> C
 }
 
 pub fn face_for(row: &Listed, thumb: bool, most: i32) -> crate::face::Face {
-    let keys = if row.kind == Some(Kind::Json) {
-        crate::shape::said_of(&row.preview, crate::say::in_english())
-            .map(|said| {
-                if said.pairs.is_empty() {
-                    said.keys
-                } else {
-                    said.pairs
-                }
-            })
-            .unwrap_or_default()
-    } else {
-        String::new()
-    };
     crate::face::Face::of(&crate::face::Seen {
         kind: row.kind,
         found: was_found(row),
         thumb,
         paints: shown_as_colour(row).is_some(),
         body: &body_of(row),
-        keys: &keys,
         most,
     })
 }
 
 pub fn opened_for(row: &Listed, face: crate::face::Face) -> crate::face::Opened {
-    crate::face::opened_of(
-        face,
-        row.kind == Some(Kind::Json),
-        &body_of(row),
-        crate::say::in_english(),
-    )
+    crate::face::opened_of(face, &body_of(row), crate::say::in_english())
 }
 
-pub fn mixed_open_px(row: &Listed, thumb: bool, now: i64, room: f32, most: i32) -> f32 {
+pub fn mixed_open_px(row: &Listed, thumb: bool, room: f32, most: i32) -> f32 {
     let face = face_for(row, thumb, most);
     let opened = opened_for(row, face);
-    let claims = if row.kind == Some(Kind::Token) {
-        i32::try_from(crate::token::rows_in(
-            &row.preview,
-            now,
-            crate::say::in_english(),
-        ))
-        .unwrap_or(0)
-    } else {
-        0
-    };
-    let body = crate::face::open_body_px(face, &opened, claims, room);
+    let body = crate::face::open_body_px(face, &opened, room);
     if row.broken_since.is_some() {
         crate::face::open_lost_px(body)
     } else {
@@ -323,19 +240,6 @@ pub fn headline_of(row: &Listed, body: &str, folder: Option<&crate::folder::Part
         },
         _ => squeezed_of(body),
     }
-}
-
-pub fn open_lines_of(row: &Listed, body: &str, now: i64) -> i32 {
-    let claims = if row.kind == Some(Kind::Token) {
-        let seen = crate::token::rows_in(&row.preview, now, crate::say::in_english());
-        i32::try_from(seen).unwrap_or(0)
-    } else {
-        0
-    };
-    if claims > 0 {
-        return 1 + claims + 1;
-    }
-    lines_of(body)
 }
 
 pub fn touched_of(row: &Listed) -> i64 {
@@ -368,8 +272,6 @@ pub fn top_line(headline: String, aside: String, label: &str) -> (String, String
 }
 
 pub struct Knows<'a> {
-    pub shape: &'a crate::shape::Said,
-    pub token: &'a crate::token::Said,
     pub folder: Option<&'a crate::folder::Parts>,
     pub papers: Option<&'a crate::papers::Papers>,
     pub clock: &'a str,
@@ -378,8 +280,6 @@ pub struct Knows<'a> {
 
 pub fn aside_of(row: &Listed, knows: &Knows<'_>, meta: Option<&MetaOfOne>) -> String {
     let Knows {
-        shape,
-        token,
         folder,
         papers,
         clock,
@@ -394,7 +294,6 @@ pub fn aside_of(row: &Listed, knows: &Knows<'_>, meta: Option<&MetaOfOne>) -> St
             .join(" · ")
     };
     match row.kind {
-        Some(Kind::Json) => joined(&[&shape.root, &shape.counted]),
         Some(Kind::Video | Kind::Audio) => joined(&[clock, measures]),
         Some(Kind::Image) => joined(&[measures]),
         Some(Kind::File) => {
@@ -409,7 +308,6 @@ pub fn aside_of(row: &Listed, knows: &Knows<'_>, meta: Option<&MetaOfOne>) -> St
                 &crate::folder::said_in(meta, crate::say::in_english()),
             ])
         }
-        Some(Kind::Token) => joined(&[&token.who, &token.life]),
         Some(Kind::Text | Kind::Code) => more_than_shown(row),
         _ => String::new(),
     }
@@ -560,34 +458,46 @@ fn label_pair(kind: Option<Kind>) -> (&'static str, &'static str) {
     }
 }
 
-pub fn kind_from_word(word: &str) -> Option<Kind> {
-    let folded: String = word
-        .to_lowercase()
-        .chars()
-        .map(|one| match one {
-            'á' => 'a',
-            'é' => 'e',
-            'í' => 'i',
-            'ó' => 'o',
-            'ú' => 'u',
-            other => other,
-        })
-        .collect();
-    let name = match folded.as_str() {
-        "texto" => "text",
-        "codigo" => "code",
-        "enlace" | "link" => "link",
-        "correo" => "email",
-        "telefono" => "phone",
-        "imagen" => "image",
-        "archivo" => "file",
-        "carpeta" => "folder",
-        "video" => "video",
-        "audio" => "audio",
-        "color" => "color",
-        other => other,
+pub const GROUPS: [&str; 4] = ["text", "image", "file", "link"];
+
+pub fn kinds_of_group(group: &str) -> &'static [Kind] {
+    match group {
+        "text" => &[
+            Kind::Text,
+            Kind::Code,
+            Kind::Json,
+            Kind::Email,
+            Kind::Phone,
+            Kind::Color,
+            Kind::Ip,
+            Kind::Uuid,
+            Kind::Token,
+        ],
+        "image" => &[Kind::Image],
+        "file" => &[Kind::File, Kind::Folder, Kind::Audio, Kind::Video],
+        "link" => &[Kind::Link],
+        _ => &[],
+    }
+}
+
+pub fn label_of_group(group: &str) -> &'static str {
+    let kind = match group {
+        "image" => Kind::Image,
+        "file" => Kind::File,
+        "link" => Kind::Link,
+        _ => Kind::Text,
     };
-    Kind::from_name(name)
+    label_of(Some(kind))
+}
+
+pub fn group_from_word(word: &str) -> Option<&'static str> {
+    match word.to_lowercase().as_str() {
+        "文本" | "text" => Some("text"),
+        "图片" | "image" => Some("image"),
+        "文件" | "file" => Some("file"),
+        "链接" | "link" => Some("link"),
+        _ => None,
+    }
 }
 
 pub fn harvest(query: &str) -> (Vec<String>, String) {
@@ -597,8 +507,8 @@ pub fn harvest(query: &str) -> (Vec<String>, String) {
     let mut kept = Vec::new();
     for (at, token) in tokens.iter().enumerate() {
         let last = at + 1 == tokens.len();
-        match token.strip_prefix('#').and_then(kind_from_word) {
-            Some(kind) if !(last && still_typing) => taken.push(kind.as_str().to_owned()),
+        match token.strip_prefix('#').and_then(group_from_word) {
+            Some(group) if !(last && still_typing) => taken.push(group.to_owned()),
             _ => kept.push(*token),
         }
     }
@@ -609,124 +519,24 @@ pub fn harvest(query: &str) -> (Vec<String>, String) {
     (taken, rest)
 }
 
-pub fn sweeten(query: &str) -> String {
-    let spaced = query.ends_with(char::is_whitespace);
-    let sweet = query
-        .split_whitespace()
-        .map(|token| {
-            let (sign, rest) = match token.strip_prefix('-') {
-                Some(rest) => ("-", rest),
-                None => ("", token),
-            };
-            match rest.strip_prefix('#').and_then(kind_from_word) {
-                Some(kind) => format!("{sign}k:{}", kind.as_str()),
-                None => token.to_owned(),
+pub fn chips_of(facets: &[Facet], selected: &[String]) -> Vec<Chip> {
+    GROUPS
+        .into_iter()
+        .map(|group| {
+            let kinds = kinds_of_group(group);
+            let count: i64 = facets
+                .iter()
+                .filter(|facet| kinds.contains(&facet.kind))
+                .map(|facet| facet.count)
+                .sum();
+            Chip {
+                key: group.into(),
+                label: label_of_group(group).into(),
+                count: compact(count).into(),
+                selected: selected.iter().any(|one| one == group),
             }
         })
-        .collect::<Vec<_>>()
-        .join(" ");
-    if spaced && !sweet.is_empty() {
-        sweet + " "
-    } else {
-        sweet
-    }
-}
-
-pub fn label_of_form(form: Form) -> &'static str {
-    let (es, en) = form_pair(form);
-    crate::say::pick(es, en)
-}
-
-fn form_pair(form: Form) -> (&'static str, &'static str) {
-    match form {
-        Form::PlainText => ("En texto plano", "As plain text"),
-        Form::Markdown => ("Como Markdown", "As Markdown"),
-        Form::JsonPretty => ("Formateado", "Formatted"),
-        Form::JsonMinified => ("Minificado", "Minified"),
-        Form::JsonKeys => ("Solo las claves", "Keys only"),
-        Form::JsonTable => ("Como tabla", "As a table"),
-        Form::ColorHex => ("En hex", "In hex"),
-        Form::ColorRgb => ("En rgb()", "In rgb()"),
-        Form::ColorHsl => ("En hsl()", "In hsl()"),
-        Form::ColorName => ("Por su nombre", "By its name"),
-        Form::LinkMarkdown => ("En Markdown", "In Markdown"),
-        Form::LinkDomain => ("Solo el dominio", "Domain only"),
-        Form::LinkTitled => ("Con su título", "With its title"),
-        Form::CodeOneLine => ("Sin saltos de línea", "Without line breaks"),
-        Form::CodeBlock => ("Bloque Markdown", "Markdown block"),
-        Form::CodeDedented => ("Sin indentación", "Without indentation"),
-        Form::TokenHeader => ("Como cabecera", "As a header"),
-        Form::TokenClaims => ("Su contenido", "Its contents"),
-        Form::TokenCurl => ("Como curl", "As curl"),
-        Form::ImageJpeg => ("Como JPEG", "As JPEG"),
-        Form::ImageOcr => ("El texto que leyó", "The text it read"),
-        Form::Path => ("Su ruta", "Its path"),
-        Form::FileName => ("Su nombre", "Its name"),
-        Form::TextQuote => ("Como cita", "As a quote"),
-        Form::TextUpper => ("TODO EN MAYÚSCULAS", "ALL CAPS"),
-        Form::TextLower => ("todo en minúsculas", "all lowercase"),
-    }
-}
-
-pub const AS_IS: &str = "as-is";
-
-pub fn shorthand_of(form: Form) -> Option<&'static str> {
-    match form {
-        Form::ColorHex => Some("hex"),
-        Form::ColorRgb => Some("rgb"),
-        Form::ColorHsl => Some("hsl"),
-        Form::ColorName => Some(crate::say::pick("nombre", "name")),
-        _ => None,
-    }
-}
-
-pub fn as_is_label(kind: Option<Kind>) -> &'static str {
-    let (es, en) = match kind {
-        Some(Kind::Token) => ("El token", "The token"),
-        Some(Kind::File) | Some(Kind::Folder) => ("El archivo", "The file"),
-        Some(Kind::Image) => ("La imagen", "The image"),
-        Some(Kind::Link) => ("El enlace", "The link"),
-        _ => ("Tal cual", "As it is"),
-    };
-    crate::say::pick(es, en)
-}
-
-pub fn form_of(key: &str) -> Option<Form> {
-    Form::ALL.into_iter().find(|form| form.as_str() == key)
-}
-
-pub fn chips_of(facets: &[Facet], selected: &[String]) -> Vec<Chip> {
-    let mut kinds: Vec<&Facet> = facets.iter().filter(|facet| facet.count > 0).collect();
-    kinds.sort_by(|a, b| {
-        b.count
-            .cmp(&a.count)
-            .then(a.kind.as_str().cmp(b.kind.as_str()))
-    });
-    kinds
-        .into_iter()
-        .map(|facet| {
-            let key = facet.kind.as_str();
-            chip(
-                key,
-                label_of(Some(facet.kind)),
-                facet.count,
-                selected.iter().any(|one| one == key),
-            )
-        })
         .collect()
-}
-
-fn chip(key: &str, label: &str, count: i64, selected: bool) -> Chip {
-    let of_kind = cp_core::kind::Kind::from_name(key)
-        .map(|kind| crate::layout::layout_for(&[kind]))
-        .unwrap_or(crate::layout::Layout::Everything);
-    Chip {
-        key: key.into(),
-        label: label.into(),
-        count: compact(count).into(),
-        selected,
-        has_ways: !crate::ways::ways_of(of_kind).is_empty(),
-    }
 }
 
 pub fn compact(count: i64) -> String {
@@ -818,25 +628,16 @@ fn count_in(english: bool, count: i64) -> String {
     }
 }
 
-const FOOTER_ES: &str = "pegar · alt+enter: más formas";
-const FOOTER_EN: &str = "paste · alt+enter: more forms";
+const FOOTER_ES: &str = "pegar · shift+enter: en plano";
+const FOOTER_EN: &str = "paste · shift+enter: plain text";
 
 pub fn dress_words(ui: &crate::Panel) {
     use slint::ComponentHandle;
     let words = ui.global::<crate::Words>();
     words.set_hint(crate::say::pick("Busca o filtra con #", "Search, or filter with #").into());
     words.set_footer(crate::say::pick(FOOTER_ES, FOOTER_EN).into());
-    words.set_sheet_footer(
-        crate::say::pick(
-            "↑↓ elegir · 1-9 · ⏎ pegar · esc",
-            "↑↓ choose · 1-9 · ⏎ paste · esc",
-        )
-        .into(),
-    );
-    words.set_paste_as(crate::say::pick("pegar como", "paste as").into());
     words.set_paste_it(crate::say::pick("Pegar", "Paste").into());
     words.set_paste_plain(crate::say::pick("Plano", "Plain").into());
-    words.set_paste_as_short(crate::say::pick("Pegar como", "Paste as").into());
     words.set_open_it(crate::say::pick("abrir", "open").into());
     words.set_name_it(crate::say::pick("poner nombre", "give it a name").into());
     words.set_name_room(i32::try_from(NAME_ROOM).unwrap_or(i32::MAX));
@@ -844,8 +645,6 @@ pub fn dress_words(ui: &crate::Panel) {
     words.set_pin(crate::say::pick("anclar", "pin").into());
     words.set_unpin(crate::say::pick("desanclar", "unpin").into());
     words.set_remove(crate::say::pick("borrar", "delete").into());
-    words.set_one_kind(crate::say::pick("uno", "one").into());
-    words.set_many_kinds(crate::say::pick("varios", "many").into());
 }
 
 #[cfg(test)]

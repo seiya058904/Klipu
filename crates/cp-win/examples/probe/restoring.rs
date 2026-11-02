@@ -90,9 +90,9 @@ fn what_goes_back_to_the_clipboard(b: &mut Battery) {
             };
             let had = item.formats.len();
 
-            let plain = render(Form::PlainText, &content_of(&item, None))
-                .ok_or("the plain form was not offered")?
-                .into_item();
+            let plain = cp_core::item::Item::plain(
+                &plainest(&content_of(&item, None)).ok_or("the plain form was not offered")?,
+            );
             let written = {
                 let clipboard = Clipboard::to_write().ok_or("did not open")?;
                 to_clipboard(&clipboard, &plain)
@@ -139,10 +139,7 @@ fn what_goes_back_to_the_clipboard(b: &mut Battery) {
                 }],
             };
             let content = content_of(&only_image, None);
-            if forms_for(&content).contains(&Form::PlainText) {
-                return Err("pasting as plain text was offered without text".into());
-            }
-            match render(Form::PlainText, &content) {
+            match plainest(&content) {
                 None => Ok(()),
                 Some(other) => Err(format!("returned {other:?}")),
             }

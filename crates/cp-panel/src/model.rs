@@ -1,5 +1,5 @@
 use crate::Card;
-use crate::view::{body_of, card_of, was_found};
+use crate::view::card_of;
 use cp_store::{Cursor, Filter, Listed, Store};
 use slint::{Model, ModelNotify, ModelTracker};
 use std::cell::{Cell, RefCell};
@@ -10,19 +10,10 @@ const AHEAD: usize = 40;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Metrics {
-    pub body_json: f32,
-    pub body_link: f32,
     pub body_folder: f32,
     pub body_papers: f32,
-    pub body_media: f32,
     pub head: f32,
-    pub tall: f32,
     pub plain: f32,
-    pub mixed: f32,
-    pub json: f32,
-    pub found: f32,
-    pub frame: f32,
-    pub line: f32,
     pub shut_lines: i32,
 }
 
@@ -44,9 +35,8 @@ pub fn heads_group(filter: &Filter, rows: &[Listed], index: usize) -> bool {
     }
 }
 
-pub fn by_time(filter: &Filter, plain_way: bool) -> bool {
-    wears_cards(plain_way)
-        && filter.order == cp_store::Order::Recent
+pub fn by_time(filter: &Filter) -> bool {
+    filter.order == cp_store::Order::Recent
         && filter
             .query
             .as_deref()
@@ -63,27 +53,8 @@ pub const MIXED_KEYS: [&str; 4] = [
 ];
 
 pub fn meta_keys_for(filter: &Filter) -> &'static [&'static str] {
-    match crate::layout::layout_for(&filter.kinds) {
-        crate::layout::Layout::Video | crate::layout::Layout::Audio => &crate::media::KEYS,
-        crate::layout::Layout::Folder => &crate::folder::KEYS,
-        crate::layout::Layout::Everything | crate::layout::Layout::Image => &MIXED_KEYS,
-        _ => &[],
-    }
-}
-
-pub fn shut_height_for(filter: &Filter, metrics: &Metrics, plain_way: bool) -> f32 {
-    if plain_way {
-        return metrics.plain;
-    }
-    match crate::layout::layout_for(&filter.kinds) {
-        crate::layout::Layout::Json => metrics.json,
-        crate::layout::Layout::Everything => metrics.mixed,
-        _ => metrics.plain,
-    }
-}
-
-pub fn wears_cards(plain_way: bool) -> bool {
-    !plain_way
+    let _ = filter;
+    &MIXED_KEYS
 }
 
 pub fn reveal(top: f32, span: f32, scroll: f32, viewport: f32) -> f32 {
@@ -126,7 +97,6 @@ pub struct Rows {
     filter: Filter,
     now: i64,
     metrics: Metrics,
-    plain_way: bool,
     clock: Option<Clock>,
     rows: RefCell<Vec<Listed>>,
     meta: RefCell<cp_store::MetaByItem>,
@@ -147,7 +117,6 @@ impl Rows {
         filter: Filter,
         now: i64,
         metrics: Metrics,
-        plain_way: bool,
         clock: Option<Clock>,
     ) -> Rc<Self> {
         let rows = Rc::new(Self {
@@ -155,7 +124,6 @@ impl Rows {
             filter,
             now,
             metrics,
-            plain_way,
             clock,
             rows: RefCell::new(Vec::new()),
             meta: RefCell::new(cp_store::MetaByItem::new()),
@@ -175,9 +143,7 @@ impl Rows {
     }
 
     fn time_offset(&self) -> Option<&Clock> {
-        self.clock
-            .as_ref()
-            .filter(|_| by_time(&self.filter, self.plain_way))
+        self.clock.as_ref().filter(|_| by_time(&self.filter))
     }
 
     fn when(&self, row: &Listed, offset: &Clock) -> crate::age::When {
@@ -250,9 +216,7 @@ impl Rows {
             self.resize(was, back);
         }
         self.open.set(index);
-        if let Some(now) = index
-            && !self.tall_at(now)
-        {
+        if let Some(now) = index {
             let open = self.open_of(now);
             self.resize(now, open);
         }
@@ -269,10 +233,7 @@ impl Rows {
             0.0
         };
         let thumb = row.thumb_path.is_some() && !self.thumbless.borrow().contains(&index);
-        if wears_cards(self.plain_way) {
-            return self.mixed_open(row, thumb) + head;
-        }
-        self.open_of_row(row) + head
+        self.mixed_open(row, thumb) + head
     }
 
     fn mixed_open(&self, row: &Listed, thumb: bool) -> f32 {
@@ -280,49 +241,10 @@ impl Rows {
         let room = match row.kind {
             Some(Kind::Folder) => self.metrics.body_folder,
             Some(Kind::File) => self.metrics.body_papers,
-            Some(Kind::Video | Kind::Audio) => self.metrics.body_media,
+            Some(Kind::Video | Kind::Audio) => self.metrics.body_papers,
             _ => 0.0,
         };
-        crate::view::mixed_open_px(row, thumb, self.now, room, self.metrics.shut_lines)
-    }
-
-    fn open_of_row(&self, row: &Listed) -> f32 {
-        if wears_cards(self.plain_way) {
-            return self.mixed_open(row, false);
-        }
-        if row.thumb_path.is_some() {
-            return self.metrics.tall;
-        }
-        let lines = crate::view::open_lines_of(row, &body_of(row), self.now);
-        let own = if wears_cards(self.plain_way) {
-            self.body_room(row)
-        } else {
-            0.0
-        };
-        self.metrics.frame + lines as f32 * self.metrics.line + own
-    }
-
-    fn body_room(&self, row: &Listed) -> f32 {
-        use cp_core::kind::Kind;
-        let tall = match row.kind {
-            Some(Kind::Json) => self.metrics.body_json,
-            Some(Kind::Link) => self.metrics.body_link,
-            Some(Kind::Folder) => self.metrics.body_folder,
-            Some(Kind::File) => self.metrics.body_papers,
-            Some(Kind::Video | Kind::Audio) => self.metrics.body_media,
-            _ => 0.0,
-        };
-        if tall > 0.0 { tall + EDGE } else { 0.0 }
-    }
-
-    fn tall_at(&self, index: usize) -> bool {
-        !wears_cards(self.plain_way)
-            && !self.thumbless.borrow().contains(&index)
-            && self
-                .rows
-                .borrow()
-                .get(index)
-                .is_some_and(|row| row.thumb_path.is_some())
+        crate::view::mixed_open_px(row, thumb, room, self.metrics.shut_lines)
     }
 
     fn base_of(&self, index: usize) -> f32 {
@@ -354,16 +276,7 @@ impl Rows {
         let Some(row) = rows.get(index) else {
             return self.metrics.plain;
         };
-        if wears_cards(self.plain_way) {
-            return crate::view::face_for(row, has_thumb, self.metrics.shut_lines).shut_px();
-        }
-        if has_thumb {
-            return self.metrics.tall;
-        }
-        if was_found(row) {
-            return self.metrics.found;
-        }
-        self.shut_height()
+        crate::view::face_for(row, has_thumb, self.metrics.shut_lines).shut_px()
     }
 
     fn open_of_row_with(&self, index: usize, has_thumb: bool) -> f32 {
@@ -371,23 +284,7 @@ impl Rows {
         let Some(row) = rows.get(index) else {
             return self.metrics.plain;
         };
-        if wears_cards(self.plain_way) {
-            return self.mixed_open(row, has_thumb);
-        }
-        if has_thumb {
-            return self.metrics.tall;
-        }
-        let lines = crate::view::open_lines_of(row, &body_of(row), self.now);
-        let own = if wears_cards(self.plain_way) {
-            self.body_room(row)
-        } else {
-            0.0
-        };
-        self.metrics.frame + lines as f32 * self.metrics.line + own
-    }
-
-    fn shut_height(&self) -> f32 {
-        shut_height_for(&self.filter, &self.metrics, self.plain_way)
+        self.mixed_open(row, has_thumb)
     }
 
     fn resize(&self, index: usize, height: f32) {
@@ -474,13 +371,9 @@ impl Rows {
         let heads = self.heads(&rows, index);
         let without_thumb = if heads { self.metrics.head } else { 0.0 }
             + if self.open.get() == Some(index) {
-                self.open_of_row(row)
-            } else if wears_cards(self.plain_way) {
-                crate::view::face_for(row, false, self.metrics.shut_lines).shut_px()
-            } else if was_found(row) {
-                self.metrics.found
+                self.mixed_open(row, false)
             } else {
-                self.shut_height()
+                crate::view::face_for(row, false, self.metrics.shut_lines).shut_px()
             };
         let meta = self.meta.borrow();
         let mut card = card_of(row, self.now, meta.get(&row.id), self.metrics.shut_lines);

@@ -279,10 +279,6 @@ pub fn paste_plain<R: Runtime>(app: &AppHandle<R>) {
     ask(app, "plain");
 }
 
-pub fn choose<R: Runtime>(app: &AppHandle<R>) {
-    ask(app, "forms");
-}
-
 fn ask<R: Runtime>(app: &AppHandle<R>, what: &str) {
     allow(app);
     if say(app, what).is_err() {

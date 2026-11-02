@@ -1,6 +1,6 @@
 use super::*;
 
-const EVERY_SPARE: [&[&str]; 3] = [SPARE, PLAIN_SPARE, FORMS_SPARE];
+const EVERY_SPARE: [&[&str]; 2] = [SPARE, PLAIN_SPARE];
 
 fn every_spare() -> impl Iterator<Item = &'static &'static str> {
     EVERY_SPARE.into_iter().flatten()
@@ -25,7 +25,6 @@ fn each_shortcut_reads_and_writes_its_own_line_of_the_settings() {
     }
     assert_eq!(config.shortcut, "Ctrl+Alt+F1");
     assert_eq!(config.plain_shortcut, "Ctrl+Alt+F2");
-    assert_eq!(config.forms_shortcut, "Ctrl+Alt+F3");
 }
 
 #[test]
@@ -128,7 +127,6 @@ fn settings_that_cannot_be_read_take_no_combination_beyond_the_panel() {
     let unread = unread();
     assert_eq!(unread.shortcut, cp_config::SHORTCUT);
     assert_eq!(unread.plain_shortcut, "");
-    assert_eq!(unread.forms_shortcut, "");
 }
 
 #[test]
@@ -138,5 +136,4 @@ fn only_the_shortcut_that_opens_no_window_keeps_the_menu_closed_by_hand() {
         !Role::Panel.masks_the_menu(),
         "a window of ours takes the keys, and a typed mask would cost it the front"
     );
-    assert!(!Role::Forms.masks_the_menu());
 }

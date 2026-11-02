@@ -13,8 +13,6 @@ pub const SHORTCUT: &str = "Ctrl+Alt+V";
 
 pub const PLAIN_SHORTCUT: &str = "Alt+Shift+V";
 
-pub const FORMS_SHORTCUT: &str = "Ctrl+Alt+P";
-
 pub const THE_SYSTEMS: &[&str] = &[
     "Ctrl+C",
     "Ctrl+X",
@@ -57,7 +55,6 @@ pub struct Config {
     pub theme: Theme,
     pub shortcut: String,
     pub plain_shortcut: String,
-    pub forms_shortcut: String,
     pub hides_when_left: bool,
     #[serde(with = "count")]
     pub keeps_days: Option<u16>,
@@ -105,7 +102,6 @@ impl Default for Config {
             theme: Theme::default(),
             shortcut: SHORTCUT.to_owned(),
             plain_shortcut: PLAIN_SHORTCUT.to_owned(),
-            forms_shortcut: FORMS_SHORTCUT.to_owned(),
             hides_when_left: true,
             keeps_days: Some(KEEPS_DAYS),
             images_quota_mb: Some(IMAGES_QUOTA_MB),
@@ -127,15 +123,8 @@ impl Config {
         }
         self.shortcut = self.shortcut.trim().to_owned();
         self.plain_shortcut = self.plain_shortcut.trim().to_owned();
-        self.forms_shortcut = self.forms_shortcut.trim().to_owned();
         if the_systems(&self.plain_shortcut) || same_keys(&self.plain_shortcut, &self.shortcut) {
             self.plain_shortcut.clear();
-        }
-        if the_systems(&self.forms_shortcut)
-            || same_keys(&self.forms_shortcut, &self.shortcut)
-            || same_keys(&self.forms_shortcut, &self.plain_shortcut)
-        {
-            self.forms_shortcut.clear();
         }
         if self.keeps_days == Some(0) {
             self.keeps_days = None;

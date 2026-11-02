@@ -1,5 +1,5 @@
 use crate::aside::Leaving;
-use crate::handing::{forms_of, hand_over, paste_as};
+use crate::handing::{hand_over, paste_plain};
 use crate::here;
 use crate::landing::Towards;
 use crate::model::{Metrics, Rows, reveal};
@@ -7,9 +7,10 @@ use crate::note::note;
 use crate::opening::Reached;
 use crate::reaching::reach_for;
 use crate::showing::{NEXT_FRAME, appear, leave_when_left, vanish};
-use crate::view::{chips_of, compact, count_text, empty_of, harvest, label_of, sweeten};
-use crate::{Chip, FormRow, Options, Panel};
-use cp_core::kind::Kind;
+use crate::view::{
+    chips_of, compact, count_text, empty_of, harvest, kinds_of_group, label_of_group,
+};
+use crate::{Chip, Options, Panel};
 use cp_store::{Clock, Filter, Store};
 use slint::{ComponentHandle, Model, ModelRc};
 use std::cell::RefCell;
@@ -23,7 +24,6 @@ const KEPT_IN_VIEW: usize = 2;
 const SETTLES: Duration = Duration::from_millis(70);
 const RESTS: Duration = Duration::from_millis(110);
 const LOOKS: Duration = Duration::from_millis(250);
-const SETTLES_SHEET: Duration = Duration::from_millis(260);
 
 #[derive(Clone)]
 pub struct App {
@@ -39,27 +39,16 @@ struct State {
     query: String,
     tags: Vec<String>,
     pinned: bool,
-    keeping: bool,
-    ways: std::collections::HashMap<&'static str, String>,
     rows: Option<Rc<Rows>>,
     options: Options,
     metrics: Metrics,
-    asking: Asking,
     typing: slint::Timer,
     leaving: slint::Timer,
     pointing: slint::Timer,
-    arming: slint::Timer,
     last_refresh: Duration,
     kept: crate::kept::Shelf,
     generation: Arc<AtomicU64>,
     counter: mpsc::Sender<Request>,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Asking {
-    Forms(i64),
-    Kinds,
-    Ways,
 }
 
 struct Request {
@@ -78,18 +67,9 @@ impl App {
         let theme = panel.global::<crate::Theme>();
         let metrics = Metrics {
             head: theme.get_row_head(),
-            tall: theme.get_row_thumb(),
-            body_json: theme.get_body_json(),
-            body_link: theme.get_body_link(),
             body_folder: theme.get_body_folder(),
             body_papers: theme.get_body_papers(),
-            body_media: theme.get_body_media(),
             plain: theme.get_row_plain(),
-            mixed: theme.get_row_mixed(),
-            json: theme.get_row_json(),
-            found: theme.get_row_found(),
-            frame: theme.get_row_frame(),
-            line: theme.get_line(),
             shut_lines: kept.look.density.shut_lines(),
         };
         let generation = Arc::new(AtomicU64::new(0));
@@ -102,16 +82,12 @@ impl App {
             query: String::new(),
             tags: Vec::new(),
             pinned: false,
-            keeping: false,
-            ways: std::collections::HashMap::new(),
             rows: None,
             options,
             metrics,
-            asking: Asking::Kinds,
             typing: slint::Timer::default(),
             leaving: slint::Timer::default(),
             pointing: slint::Timer::default(),
-            arming: slint::Timer::default(),
             last_refresh: Duration::ZERO,
             kept: crate::kept::Shelf::new(kept),
             generation,
@@ -182,7 +158,7 @@ impl App {
                 *held = copied;
             }
             let _ = ui.upgrade_in_event_loop(|panel| {
-                if panel.window().is_visible() && !panel.get_sheet_open() {
+                if panel.window().is_visible() {
                     panel.invoke_arrived();
                 }
                 panel.invoke_copied();
@@ -242,52 +218,11 @@ impl App {
     }
 
     fn wire_chrome(&self, panel: &Panel) {
-        let ui = self.ui.clone();
-        let state = self.state.clone();
-        panel.on_sheet_chosen(move |key| {
-            let Some(ui) = ui.upgrade() else {
-                return;
-            };
-            ui.set_sheet_open(false);
-            let asking = state.borrow().asking;
-            match asking {
-                Asking::Forms(id) => {
-                    let (store, engine, towards) = aimed(&state);
-                    match paste_as(&store, engine.as_deref(), id, key.as_str(), towards) {
-                        Ok(()) => deliver(&ui, &state),
-                        Err(refused) => complain(&ui, refused.said()),
-                    }
-                }
-                Asking::Kinds => {
-                    pick_tag(&state, key.as_str(), false);
-                    blink(&ui);
-                    refresh(&ui, &state);
-                }
-                Asking::Ways => {
-                    {
-                        let mut state = state.borrow_mut();
-                        let layout = crate::layout::layout_for(&filter_of(&state).kinds);
-                        crate::ways::remember(&mut state.ways, layout, key.as_str());
-                    }
-                    refresh(&ui, &state);
-                }
-            }
-        });
-        let ui = self.ui.clone();
-        let state = self.state.clone();
-        panel.on_keep_toggled(move || {
-            let now = !state.borrow().keeping;
-            state.borrow_mut().keeping = now;
-            if let Some(ui) = ui.upgrade() {
-                ui.set_keeping(now);
-            }
-        });
         let (ui, state) = (self.ui.clone(), self.state.clone());
         panel.on_ask_settings(move || {
             let Some(ui) = ui.upgrade() else {
                 return;
             };
-            ui.set_sheet_open(false);
             step_aside(&ui, &state, Leaving::Away);
             crate::note::tell("settings");
         });
@@ -307,19 +242,11 @@ impl App {
                 crate::quick::Aim {
                     store: state.store.clone(),
                     engine: state.engine.clone(),
-                    kept: state.kept.get(),
                 }
             }),
             self.state.borrow().ahead.clone(),
         );
-        if !quick.draw() {
-            note("the paste as card is drawn on its first use instead");
-        }
-        let plain = quick.clone();
-        panel.on_plain_asked(move || plain.plain());
-        let forms = quick.clone();
-        panel.on_forms_asked(move || forms.choose());
-        panel.on_quitting(move || quick.ground());
+        panel.on_plain_asked(move || quick.plain());
     }
 
     fn wire(&self, panel: &Panel) {
@@ -359,13 +286,6 @@ impl App {
             if let Some(ui) = ui.upgrade() {
                 blink(&ui);
                 refresh(&ui, &state);
-            }
-        });
-        let ui = self.ui.clone();
-        let state = self.state.clone();
-        panel.on_ask_ways_for(move |_| {
-            if let Some(ui) = ui.upgrade() {
-                ask_ways(&ui, &state);
             }
         });
         let ui = self.ui.clone();
@@ -518,63 +438,6 @@ impl App {
         });
         let ui = self.ui.clone();
         let state = self.state.clone();
-        panel.on_ask_forms(move |id| {
-            let Some(ui) = ui.upgrade() else {
-                return;
-            };
-            let rows = forms_of(&state.borrow().store, i64::from(id));
-            if rows.is_empty() {
-                return;
-            }
-            state.borrow_mut().asking = Asking::Forms(i64::from(id));
-            let at = ui.get_current();
-            if at >= 0
-                && let Some(rows) = state.borrow().rows.as_ref()
-            {
-                rows.open_at(ui.get_opened().then_some(at as usize));
-            }
-            ui.set_hovered(-1);
-            if let Some(card) = (at >= 0)
-                .then(|| ui.get_cards().row_data(at as usize))
-                .flatten()
-            {
-                ui.set_sheet_subject(slint::format!("{} · {}", card.title, card.source));
-                ui.set_sheet_kind(card.kind.clone());
-            }
-            open_sheet(&ui, crate::say::pick("PEGAR COMO", "PASTE AS"), rows);
-            arm_sheet(&state, &ui);
-        });
-        let ui = self.ui.clone();
-        let state = self.state.clone();
-        panel.on_ask_kinds(move || {
-            let Some(ui) = ui.upgrade() else {
-                return;
-            };
-            let chips = ui.get_chips();
-            let rows: Vec<FormRow> = (0..chips.row_count())
-                .filter_map(|at| chips.row_data(at))
-                .map(|chip| FormRow {
-                    key: chip.key.clone(),
-                    label: chip.label.clone(),
-                    preview: chip.count.clone(),
-                })
-                .collect();
-            if rows.is_empty() {
-                return;
-            }
-            state.borrow_mut().asking = Asking::Kinds;
-            ui.set_sheet_anchor(0.0);
-            ui.set_sheet_span(0.0);
-            ui.set_sheet_subject(Default::default());
-            open_sheet(
-                &ui,
-                crate::say::pick("FILTRAR POR TIPO", "FILTER BY KIND"),
-                rows,
-            );
-            arm_sheet(&state, &ui);
-        });
-        let ui = self.ui.clone();
-        let state = self.state.clone();
         panel.on_stirred(move |index| {
             let Some(ui) = ui.upgrade() else {
                 return;
@@ -612,7 +475,6 @@ impl App {
             }
             if let Some(ui) = ui.upgrade() {
                 ui.set_query(Default::default());
-                ui.set_sheet_open(false);
                 ui.set_chips_scroll(0.0);
                 let kept = state.borrow().kept.get();
                 state.borrow_mut().metrics.shut_lines = kept.look.density.shut_lines();
@@ -650,17 +512,10 @@ impl App {
         self.wire_chrome(panel);
         let ui = self.ui.clone();
         let state = self.state.clone();
-        panel.on_paste_as(move |id, key| {
-            let (store, engine, towards) = aimed(&state);
-            let done = paste_as(
-                &store,
-                engine.as_deref(),
-                i64::from(id),
-                key.as_str(),
-                towards,
-            );
+        panel.on_paste_plain(move |id| {
+            let (store, engine, _) = aimed(&state);
+            let done = paste_plain(&store, engine.as_deref(), i64::from(id));
             if let Some(ui) = ui.upgrade() {
-                ui.set_sheet_open(false);
                 match done {
                     Ok(()) => deliver(&ui, &state),
                     Err(refused) => complain(&ui, refused.said()),
@@ -692,7 +547,6 @@ impl App {
                     if said == Reached::Working {
                         note(&format!("{id} is being opened, slowly"));
                     }
-                    ui.set_sheet_open(false);
                     step_aside(&ui, &state, Leaving::Away);
                 }
                 Reached::NoLink => complain(&ui, crate::excuse::cannot_open_link()),
@@ -851,7 +705,6 @@ fn keeping_place(ui: &Panel, state: &Rc<RefCell<State>>) {
 
 fn refresh(ui: &Panel, state: &Rc<RefCell<State>>) {
     let started = Instant::now();
-    ui.set_sheet_open(false);
     let now = now_ms();
     let (store, filter, base, metrics) = {
         let state = state.borrow();
@@ -862,29 +715,17 @@ fn refresh(ui: &Panel, state: &Rc<RefCell<State>>) {
             state.metrics,
         )
     };
-    let keys = keys_of(&filter);
     let full = filter.clone();
     let layout = crate::layout::layout_for(&filter.kinds);
-    let way = crate::ways::recalled(&state.borrow().ways, layout).to_owned();
-    let here = crate::ways::chosen(layout, &way);
-    ui.set_way(here.key.into());
-    ui.set_way_said(if crate::ways::ways_of(layout).is_empty() {
-        Default::default()
-    } else {
-        crate::ways::label_of(here, crate::say::in_english()).into()
-    });
     ui.set_layout(layout.as_str().into());
     let mut kinds = filter.kinds.clone();
     kinds.dedup();
     ui.set_one_kind(kinds.len() == 1);
-    ui.set_plain_way(here.plain);
-    ui.set_shut(crate::model::shut_height_for(&filter, &metrics, here.plain));
     let rows = Rows::open(
         store,
         filter,
         now,
         metrics,
-        here.plain,
         Some(crate::model::by_the_quarter(here::utc_offset_at)),
     );
     ui.set_opened(false);
@@ -908,6 +749,7 @@ fn refresh(ui: &Panel, state: &Rc<RefCell<State>>) {
     ui.set_cards(ModelRc::from(rows.clone()));
     ui.set_grid_lines(ModelRc::from(crate::paired::Paired::over(rows.clone())));
     let mut state = state.borrow_mut();
+    let keys = state.tags.clone();
     state.rows = Some(rows);
     state.last_refresh = started.elapsed();
     let generation = state.generation.fetch_add(1, Ordering::SeqCst) + 1;
@@ -990,7 +832,7 @@ fn written_filter(state: &State) -> Filter {
         now,
         day_start: now - now.rem_euclid(cp_store::query::DAY),
     };
-    let mut written = cp_store::parse(&sweeten(&state.query), &clock);
+    let mut written = cp_store::parse(&state.query, &clock);
     if written.broken == cp_store::Broken::Hidden {
         written.broken = cp_store::Broken::Shown;
     }
@@ -1006,71 +848,15 @@ fn base_filter_of(state: &State) -> Filter {
 fn filter_of(state: &State) -> Filter {
     let mut filter = written_filter(state);
     for tag in &state.tags {
-        if let Some(kind) = Kind::from_name(tag) {
-            filter.kinds.push(kind);
-        }
+        filter.kinds.extend_from_slice(kinds_of_group(tag));
     }
     if state.pinned {
         filter.pinned_only = true;
     }
-    let layout = crate::layout::layout_for(&filter.kinds);
-    if layout.groups()
-        && !crate::ways::chosen(layout, crate::ways::recalled(&state.ways, layout)).recent
-    {
-        filter.order = cp_store::Order::ByGroup;
-    }
     filter
 }
 
-fn ask_ways(ui: &Panel, state: &Rc<RefCell<State>>) {
-    let (keeping, way) = {
-        let state = state.borrow();
-        (
-            state.keeping,
-            crate::ways::recalled(
-                &state.ways,
-                crate::layout::layout_for(&filter_of(&state).kinds),
-            )
-            .to_owned(),
-        )
-    };
-    if keeping {
-        return;
-    }
-    let layout = crate::layout::layout_for(&filter_of(&state.borrow()).kinds);
-    let ways = crate::ways::ways_of(layout);
-    if ways.is_empty() {
-        return;
-    }
-    let english = crate::say::in_english();
-    let here = crate::ways::chosen(layout, &way);
-    let rows: Vec<FormRow> = ways
-        .iter()
-        .map(|one| FormRow {
-            key: one.key.into(),
-            label: crate::ways::label_of(*one, english).into(),
-            preview: if one.key == here.key {
-                crate::say::pick("ahora", "now").into()
-            } else {
-                Default::default()
-            },
-        })
-        .collect();
-    state.borrow_mut().asking = Asking::Ways;
-    ui.set_sheet_anchor(0.0);
-    ui.set_sheet_span(0.0);
-    ui.set_sheet_subject(Default::default());
-    open_sheet(
-        ui,
-        crate::say::pick("CÓMO MOSTRARLO", "HOW TO SHOW IT"),
-        rows,
-    );
-    ui.set_sheet_narrow(true);
-    arm_sheet(state, ui);
-}
-
 fn pick_tag(state: &Rc<RefCell<State>>, key: &str, adding: bool) {
-    let adding = adding || state.borrow().keeping;
     let next = crate::tags::after(&state.borrow().tags, key, adding);
     state.borrow_mut().tags = next;
 }
@@ -1079,22 +865,12 @@ fn tags_of(state: &State) -> Vec<Chip> {
     state
         .tags
         .iter()
-        .filter_map(|tag| Kind::from_name(tag).map(|kind| (tag, kind)))
-        .map(|(tag, kind)| Chip {
+        .map(|tag| Chip {
             key: tag.as_str().into(),
-            label: label_of(Some(kind)).into(),
+            label: label_of_group(tag).into(),
             count: Default::default(),
             selected: true,
-            has_ways: false,
         })
-        .collect()
-}
-
-fn keys_of(filter: &Filter) -> Vec<String> {
-    filter
-        .kinds
-        .iter()
-        .map(|kind| kind.as_str().to_owned())
         .collect()
 }
 
@@ -1104,29 +880,6 @@ fn aimed(state: &Rc<RefCell<State>>) -> Aimed {
     let state = state.borrow();
     let towards = here::towards(state.ahead.load(Ordering::Relaxed));
     (state.store.clone(), state.engine.clone(), towards)
-}
-
-fn open_sheet(ui: &Panel, title: &str, rows: Vec<FormRow>) {
-    ui.set_sheet_narrow(false);
-    ui.set_sheet_at(ui.get_scroll_y());
-    ui.set_sheet_armed(false);
-    ui.set_sheet_title(title.into());
-    ui.set_sheet_rows(ModelRc::from(Rc::new(slint::VecModel::from(rows))));
-    ui.set_sheet_current(0);
-    ui.set_sheet_open(true);
-}
-
-fn arm_sheet(state: &Rc<RefCell<State>>, ui: &Panel) {
-    let later = ui.as_weak();
-    state
-        .borrow()
-        .arming
-        .start(slint::TimerMode::SingleShot, SETTLES_SHEET, move || {
-            if let Some(ui) = later.upgrade() {
-                ui.set_sheet_at(ui.get_scroll_y());
-                ui.set_sheet_armed(true);
-            }
-        });
 }
 
 pub fn busy() -> &'static str {
@@ -1175,7 +928,6 @@ fn deliver(ui: &Panel, state: &Rc<RefCell<State>>) {
     let (weak, later, state) = (ui.as_weak(), ui.as_weak(), state.clone());
     let hide = move || {
         if let Some(ui) = weak.upgrade() {
-            ui.set_sheet_open(false);
             let _ = ui.hide();
         }
     };

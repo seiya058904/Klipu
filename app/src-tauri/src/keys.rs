@@ -11,17 +11,15 @@ pub enum Role {
     #[default]
     Panel,
     Plain,
-    Forms,
 }
 
 impl Role {
-    pub const ALL: [Role; 3] = [Role::Panel, Role::Plain, Role::Forms];
+    pub const ALL: [Role; 2] = [Role::Panel, Role::Plain];
 
     pub fn of(self, config: &Config) -> &str {
         match self {
             Role::Panel => &config.shortcut,
             Role::Plain => &config.plain_shortcut,
-            Role::Forms => &config.forms_shortcut,
         }
     }
 
@@ -29,7 +27,6 @@ impl Role {
         match self {
             Role::Panel => config.shortcut = said,
             Role::Plain => config.plain_shortcut = said,
-            Role::Forms => config.forms_shortcut = said,
         }
     }
 
@@ -41,7 +38,6 @@ impl Role {
         match self {
             Role::Panel => SPARE,
             Role::Plain => PLAIN_SPARE,
-            Role::Forms => FORMS_SPARE,
         }
     }
 
@@ -49,7 +45,6 @@ impl Role {
         match self {
             Role::Panel => crate::panel::show(app),
             Role::Plain => crate::panel::paste_plain(app),
-            Role::Forms => crate::panel::choose(app),
         }
     }
 
@@ -57,7 +52,6 @@ impl Role {
         match self {
             Role::Panel => "the panel",
             Role::Plain => "pasting plain",
-            Role::Forms => "pasting as",
         }
     }
 }
@@ -74,7 +68,6 @@ pub struct Keys {
 pub fn unread() -> Config {
     Config {
         plain_shortcut: String::new(),
-        forms_shortcut: String::new(),
         ..Config::default()
     }
 }
@@ -163,9 +156,7 @@ pub const SPARE: &[&str] = &["Ctrl+Alt+V", "Alt+Shift+V", "Ctrl+Alt+Shift+V"];
 
 pub const PLAIN_SPARE: &[&str] = &["Alt+Shift+V", "Ctrl+Alt+Shift+V", "Ctrl+Alt+B"];
 
-pub const FORMS_SPARE: &[&str] = &["Ctrl+Alt+P", "Alt+Shift+P", "Ctrl+Alt+Shift+P"];
-
-fn grantable<R: Runtime>(app: &AppHandle<R>, one: Shortcut) -> bool {
+pub fn grantable<R: Runtime>(app: &AppHandle<R>, one: Shortcut) -> bool {
     let keys = app.global_shortcut();
     if keys.is_registered(one) {
         return false;

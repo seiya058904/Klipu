@@ -77,8 +77,6 @@ impl Drop for Engine {
 }
 
 const SIDE: i32 = cp_core::thumbnail::MAX_SIDE as i32;
-const WAVE_WIDE: u32 = 384;
-const WAVE_HIGH: u32 = 64;
 const RECHECK: std::time::Duration = std::time::Duration::from_secs(5);
 const LATER: i64 = 60_000;
 const SWEEPS_EVERY: std::time::Duration = std::time::Duration::from_secs(3_600);
@@ -370,10 +368,6 @@ fn thumb_of(item: &Item) -> Option<Vec<u8>> {
         return cp_core::thumbnail::of_image(image, cp_core::thumbnail::MAX_SIDE);
     }
     let first = content.paths.first()?;
-    if item.kind == Some(Kind::Audio) {
-        let bars = crate::wave::bars_of(Path::new(first))?;
-        return cp_core::thumbnail::of_wave(&bars, crate::wave::TALLEST, WAVE_WIDE, WAVE_HIGH);
-    }
     here::thumb_of_file(Path::new(first), SIDE)
 }
 

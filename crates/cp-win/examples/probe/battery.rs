@@ -1,6 +1,6 @@
 use cp_core::formats::{Family, Take};
 use cp_core::item::BLOB_UP_TO;
-use cp_core::paste_as::{Form, forms_for, render};
+use cp_core::paste_as::plainest;
 use cp_core::watch::{Cadence, Seen, Watcher};
 use cp_win::capture::{self, Captured, capture};
 use cp_win::content::content_of;
