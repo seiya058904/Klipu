@@ -53,7 +53,7 @@ fn the_reason_comes_first_because_the_tail_is_what_gets_cut() {
     for failure in EVERY {
         for english in [false, true] {
             let said = why_not(failure, english);
-            let (reason, rest) = said.split_once(';').unwrap_or((said, ""));
+            let (reason, rest) = said.split_once(['；', '，', ';']).unwrap_or((said, ""));
             assert!(
                 !rest.trim().is_empty(),
                 "{failure:?} never says the copy survived: {said}"
@@ -72,7 +72,7 @@ fn what_is_said_always_ends_by_saying_the_copy_is_safe() {
     for failure in EVERY {
         for english in [false, true] {
             let said = why_not(failure, english);
-            let safe = said.ends_with("sigue copiado") || said.ends_with("still copied");
+            let safe = said.ends_with("内容仍在剪贴板") || said.ends_with("still copied");
             assert!(
                 safe,
                 "{failure:?} alarms without saying the copy survived: {said}"

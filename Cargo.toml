@@ -3,12 +3,12 @@ resolver = "3"
 members = ["crates/*", "app/src-tauri"]
 
 [workspace.package]
-version = "3.0.0-dev"
+version = "1.0.0"
 edition = "2024"
 rust-version = "1.98"
 license = "GPL-3.0-only"
-homepage = "https://www.copanda.app/"
-repository = "https://github.com/rgdevment/CopyPaste"
+homepage = "https://github.com/seiya058904/Klipu"
+repository = "https://github.com/seiya058904/Klipu"
 publish = false
 
 [workspace.dependencies]

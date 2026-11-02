@@ -24,7 +24,7 @@ pub fn folder() -> Option<PathBuf> {
 }
 
 pub fn nowhere() -> String {
-    "the folder where CoPanda keeps its own was not found".to_owned()
+    "the folder where Klipu keeps its own was not found".to_owned()
 }
 
 pub fn history() -> Result<PathBuf, String> {

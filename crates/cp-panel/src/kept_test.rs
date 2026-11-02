@@ -41,7 +41,7 @@ fn a_config_decides_language_theme_and_hiding_in_one_go() {
         !kept.light(true),
         "a chosen dark stays dark on a light system"
     );
-    let kept = resolve(Some(&config(Some("es-CL"), cp_config::Theme::Light, true)));
+    let kept = resolve(Some(&config(Some("zh-CN"), cp_config::Theme::Light, true)));
     assert!(!kept.english);
     assert!(
         kept.light(false),

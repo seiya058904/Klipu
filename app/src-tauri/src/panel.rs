@@ -341,7 +341,11 @@ pub fn relight<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri_plugin_shell:
 }
 
 fn light<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri_plugin_shell::Error> {
-    let (mut heard, child) = app.shell().sidecar("cp-panel")?.args(["--serve"]).spawn()?;
+    let (mut heard, child) = app
+        .shell()
+        .sidecar("klipu-panel")?
+        .args(["--serve"])
+        .spawn()?;
     let whose = child.pid();
     if let Some(state) = app.try_state::<Sidecar>()
         && let Ok(mut held) = state.0.lock()

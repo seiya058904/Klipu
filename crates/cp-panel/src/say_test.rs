@@ -1,12 +1,13 @@
 use super::*;
 
 #[test]
-fn only_a_locale_that_starts_with_es_gets_spanish() {
+fn only_a_locale_that_starts_with_zh_gets_chinese() {
     assert!(english_for(Some("en")));
     assert!(english_for(Some("en-GB")));
-    assert!(!english_for(Some("es")));
-    assert!(!english_for(Some("es-CL")));
-    assert!(!english_for(Some("ES-mx")));
+    assert!(!english_for(Some("zh")));
+    assert!(!english_for(Some("zh-CN")));
+    assert!(!english_for(Some("ZH-tw")));
+    assert!(english_for(Some("es-CL")));
     assert!(english_for(Some("pt-BR")));
     assert!(english_for(Some("fr")));
     assert!(english_for(Some("de-DE")));
@@ -20,7 +21,7 @@ fn what_was_chosen_is_what_is_said() {
 }
 
 #[test]
-fn the_panel_speaks_spanish_until_somebody_says_otherwise() {
+fn the_panel_speaks_chinese_until_somebody_says_otherwise() {
     assert_eq!(
         pick("hola", "hello"),
         pick_in(in_english(), "hola", "hello")

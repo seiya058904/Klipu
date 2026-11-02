@@ -49,7 +49,7 @@ mod there {
     const RUN: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
     const APPROVED: &str =
         r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const NAME: &str = "CopyPaste";
+    const NAME: &str = "Klipu";
 
     pub fn settle() {}
 
@@ -71,7 +71,7 @@ mod there {
         let exe = std::env::current_exe()?;
         if written().is_some_and(|said| !ours(&said, &exe)) {
             return Err(std::io::Error::other(
-                "another program holds the startup entry under CopyPaste's name",
+                "another program holds the startup entry under Klipu's name",
             ));
         }
         let key =

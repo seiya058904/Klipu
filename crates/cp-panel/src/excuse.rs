@@ -4,28 +4,28 @@ pub fn why_not(failure: Failure, english: bool) -> &'static str {
     match failure {
         Failure::NotForeground | Failure::ForegroundTimeout => crate::say::pick_in(
             english,
-            "la ventana no volvió al frente; sigue copiado",
+            "窗口没能回到前台，内容仍在剪贴板",
             "the window never came back to the front; still copied",
         ),
         Failure::NoKeyboardFocus => crate::say::pick_in(
             english,
-            "ahí no había dónde escribir; sigue copiado",
+            "那里没有可输入的位置，内容仍在剪贴板",
             "there was nowhere to type there; still copied",
         ),
         Failure::TargetGone => crate::say::pick_in(
             english,
-            "esa ventana ya no está; sigue copiado",
+            "目标窗口已关闭，内容仍在剪贴板",
             "that window is gone; still copied",
         ),
-        Failure::SendDenied => crate::say::pick_in(english, denied_es(), denied_en()),
+        Failure::SendDenied => crate::say::pick_in(english, denied_zh(), denied_en()),
         Failure::InputProtected => crate::say::pick_in(
             english,
-            "el sistema protege lo que se escribe; sigue copiado",
+            "系统正在保护输入内容，内容仍在剪贴板",
             "the system is protecting what is typed; still copied",
         ),
         Failure::TargetElevated => crate::say::pick_in(
             english,
-            "esa ventana corre como administrador; sigue copiado",
+            "目标窗口以管理员身份运行，内容仍在剪贴板",
             "that window runs as administrator; still copied",
         ),
     }
@@ -33,27 +33,21 @@ pub fn why_not(failure: Failure, english: bool) -> &'static str {
 
 pub fn cannot_open() -> &'static str {
     crate::say::pick(
-        "no se pudo abrir: puede que ya no esté ahí",
+        "无法打开：它可能已不在原处",
         "could not open it: it may not be there any more",
     )
 }
 
 pub fn cannot_open_link() -> &'static str {
-    crate::say::pick(
-        "no se pudo abrir el enlace",
-        "that link could not be opened",
-    )
+    crate::say::pick("无法打开链接", "that link could not be opened")
 }
 
 pub fn cannot_name() -> &'static str {
-    crate::say::pick(
-        "no se pudo guardar el nombre",
-        "that name could not be kept",
-    )
+    crate::say::pick("无法保存名称", "that name could not be kept")
 }
 
-const fn denied_es() -> &'static str {
-    "el sistema no dejó enviar la pulsación; sigue copiado"
+const fn denied_zh() -> &'static str {
+    "系统阻止了模拟按键，内容仍在剪贴板"
 }
 
 const fn denied_en() -> &'static str {

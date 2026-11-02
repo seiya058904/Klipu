@@ -5,7 +5,7 @@ fn the_log_sits_where_the_privacy_note_says_it_does() {
     let path = where_to();
     assert_eq!(
         path.file_name().and_then(|it| it.to_str()),
-        Some("cp-gui.log")
+        Some("klipu.log")
     );
     if let Some(dir) = crate::settings::folder() {
         assert!(path.starts_with(dir));

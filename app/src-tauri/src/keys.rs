@@ -152,9 +152,9 @@ fn remember<R: Runtime>(app: &AppHandle<R>, role: Role, said: Option<&str>) {
     }
 }
 
-pub const SPARE: &[&str] = &["Ctrl+Alt+V", "Alt+Shift+V", "Ctrl+Alt+Shift+V"];
+pub const SPARE: &[&str] = &["Ctrl+Alt+K", "Ctrl+Alt+J", "Ctrl+Alt+Shift+V"];
 
-pub const PLAIN_SPARE: &[&str] = &["Alt+Shift+V", "Ctrl+Alt+Shift+V", "Ctrl+Alt+B"];
+pub const PLAIN_SPARE: &[&str] = &["Ctrl+Alt+Shift+K", "Ctrl+Alt+Shift+J", "Ctrl+Alt+B"];
 
 pub fn grantable<R: Runtime>(app: &AppHandle<R>, one: Shortcut) -> bool {
     let keys = app.global_shortcut();

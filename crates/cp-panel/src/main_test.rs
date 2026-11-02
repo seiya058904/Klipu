@@ -28,7 +28,7 @@ fn card(id: i32) -> Card {
         shut_px: SHUT,
         open_px: if id == 1 { BIG } else { OPEN },
         heads_group: id == 0,
-        group_said: "Hoy".into(),
+        group_said: "今天".into(),
         can_drag: true,
         ..Default::default()
     }

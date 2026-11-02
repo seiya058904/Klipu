@@ -32,7 +32,7 @@ fn a_row_becomes_the_card_the_panel_draws() {
     assert_eq!(card.title.as_str(), "JSON");
     assert_eq!(card.source.as_str(), "Mail");
     assert_eq!(card.times.as_str(), "3");
-    assert_eq!(card.age.as_str(), "9 min");
+    assert_eq!(card.age.as_str(), "9 分钟");
     assert_eq!(card.body.as_str(), "hola mundo");
     assert!(card.mono);
     assert!(!card.has_thumb);
@@ -80,7 +80,7 @@ fn what_was_pasted_once_or_never_carries_no_count() {
         "a card from nowhere says nothing, because a dash beside a separator reads as noise"
     );
     assert_eq!(card.under.as_str(), "");
-    assert_eq!(card.title.as_str(), "Texto");
+    assert_eq!(card.title.as_str(), "文本");
 }
 
 fn excerpt_of(parts: &[(&str, bool)]) -> Excerpt {
@@ -144,8 +144,6 @@ fn a_row_that_matched_carries_its_three_parts() {
     assert_eq!(card.tail.as_str(), " y después");
 }
 
-    "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjE3MDAwMDAwMDAsInN1YiI6ImNwLTMifQ.sig";
-
 #[test]
 fn a_card_asks_for_as_many_lines_as_its_text_needs() {
     assert_eq!(
@@ -190,9 +188,9 @@ fn an_empty_list_explains_itself_in_both_tongues() {
 
 #[test]
 fn the_count_reads_the_way_each_tongue_counts() {
-    assert_eq!(count_in(false, 0), "sin elementos");
-    assert_eq!(count_in(false, 1), "1 elemento");
-    assert_eq!(count_in(false, 7), "7 elementos");
+    assert_eq!(count_in(false, 0), "暂无内容");
+    assert_eq!(count_in(false, 1), "1 项");
+    assert_eq!(count_in(false, 7), "7 项");
     assert_eq!(count_in(true, 0), "nothing kept");
     assert_eq!(count_in(true, 1), "1 item");
     assert_eq!(count_in(true, 7), "7 items");
@@ -202,26 +200,20 @@ fn the_count_reads_the_way_each_tongue_counts() {
 fn an_empty_list_says_why_it_is_empty() {
     assert_eq!(
         empty_of("", false, false),
-        (
-            "Todavía no hay nada".into(),
-            "Lo que copies aparece aquí".into()
-        )
+        ("这里还是空的".into(), "复制的内容会出现在这里".into())
     );
-    assert_eq!(empty_of("  ", true, false).0, "No hay nada anclado");
-    assert_eq!(empty_of("", false, true).0, "No hay nada de este tipo");
+    assert_eq!(empty_of("  ", true, false).0, "还没有置顶内容");
+    assert_eq!(empty_of("", false, true).0, "没有这一类内容");
 
     let (title, hint) = empty_of(",", false, false);
-    assert_eq!(title, "Nada coincide con «,»");
-    assert!(hint.contains("por palabras"), "a comma is not a word");
+    assert_eq!(title, "没有找到“,”");
+    assert!(hint.contains("标点"), "a comma is not a word");
 
     let (title, hint) = empty_of("reunion", false, true);
-    assert_eq!(title, "Nada coincide con «reunion»");
-    assert!(hint.contains("quita el filtro"));
+    assert_eq!(title, "没有找到“reunion”");
+    assert!(hint.contains("移除筛选"));
 
-    assert_eq!(
-        empty_of("reunion", false, false).1,
-        "Prueba con menos letras"
-    );
+    assert_eq!(empty_of("reunion", false, false).1, "换个更短的词试试");
     assert_eq!(
         empty_of(
             "una consulta larguísima que no cabe en la tarjeta",
@@ -229,7 +221,7 @@ fn an_empty_list_says_why_it_is_empty() {
             false
         )
         .0,
-        "Nada coincide con «una consulta larguísima…»"
+        "没有找到“una consulta larguísima…”"
     );
 }
 
@@ -238,9 +230,9 @@ fn big_counts_are_shortened_so_the_pill_stays_a_pill() {
     assert_eq!(compact(999), "999");
     assert_eq!(compact(1_250), "1.2k");
     assert_eq!(compact(50_000), "50k");
-    assert_eq!(count_text(0), "sin elementos");
-    assert_eq!(count_text(1), "1 elemento");
-    assert_eq!(count_text(50_000), "50000 elementos");
+    assert_eq!(count_text(0), "暂无内容");
+    assert_eq!(count_text(1), "1 项");
+    assert_eq!(count_text(50_000), "50000 项");
 }
 
 #[test]
@@ -437,7 +429,7 @@ fn a_name_is_cut_by_letters_and_not_by_bytes() {
 
 #[test]
 fn a_card_with_nothing_to_quote_puts_what_it_knows_on_the_first_line() {
-    let (first, second) = super::top_line(String::new(), "476×576".to_owned(), "Imagen");
+    let (first, second) = super::top_line(String::new(), "476×576".to_owned(), "图片");
     assert_eq!(first, "476×576");
     assert_eq!(
         second, "",
@@ -448,7 +440,7 @@ fn a_card_with_nothing_to_quote_puts_what_it_knows_on_the_first_line() {
 #[test]
 fn a_card_with_something_to_quote_keeps_both_lines_where_they_were() {
     let (first, second) =
-        super::top_line("git add -A".to_owned(), "+3 líneas más".to_owned(), "Texto");
+        super::top_line("git add -A".to_owned(), "+3 líneas más".to_owned(), "文本");
     assert_eq!(first, "git add -A");
     assert_eq!(second, "+3 líneas más");
 }
@@ -555,14 +547,6 @@ fn each_type_puts_its_own_fact_on_the_second_line() {
         said.headline.as_str().contains("800"),
         "an image has nothing to quote, so its measures take the first line: «{}»",
         said.headline
-    );
-
-    let mut token = row(Some(Kind::Token));
-    token.preview = TOKEN.into();
-    let said = card_of(&token, 1_000_000, None, 2).under.to_string();
-    assert!(
-        said.contains("rodrigo") && said.contains("cloudflare"),
-        "a token says who it is for and who signed it: «{said}»"
     );
 }
 
@@ -721,7 +705,7 @@ fn a_text_with_words_or_a_thing_that_is_not_text_is_not_blank() {
 
 #[test]
 fn the_blank_line_is_said_in_both_tongues() {
-    assert_eq!(nothing_visible_in(false), "Sin texto visible");
+    assert_eq!(nothing_visible_in(false), "无可见文本");
     assert_eq!(nothing_visible_in(true), "No visible text");
 }
 
@@ -777,4 +761,63 @@ fn a_long_text_card_shows_the_lines_the_chosen_height_allows() {
     assert_eq!(card_of(&long, 1_000_000, None, 3).shut_lines, 3);
     let shut = |most| face_for(&long, false, most).shut_px();
     assert!(shut(3) > shut(2) && shut(2) > shut(1));
+}
+
+#[test]
+fn the_filters_are_always_the_same_four_and_add_up_their_kinds() {
+    let facets = [
+        Facet {
+            kind: Kind::Text,
+            count: 3,
+        },
+        Facet {
+            kind: Kind::Code,
+            count: 2,
+        },
+        Facet {
+            kind: Kind::Video,
+            count: 4,
+        },
+    ];
+    let chips = chips_of(&facets, &["file".to_owned()]);
+    let keys: Vec<&str> = chips.iter().map(|one| one.key.as_str()).collect();
+    assert_eq!(keys, ["text", "image", "file", "link"]);
+    assert_eq!(chips[0].count.as_str(), "5");
+    assert_eq!(chips[1].count.as_str(), "0");
+    assert_eq!(chips[2].count.as_str(), "4");
+    assert!(chips[2].selected && !chips[0].selected);
+}
+
+#[test]
+fn every_kind_belongs_to_exactly_one_filter() {
+    for kind in Kind::ALL {
+        let homes = GROUPS
+            .iter()
+            .filter(|group| kinds_of_group(group).contains(&kind))
+            .count();
+        assert_eq!(homes, 1, "{kind:?}");
+    }
+}
+
+#[test]
+fn a_finished_hash_word_becomes_a_filter_in_either_language() {
+    assert_eq!(
+        harvest("#图片 猫 "),
+        (vec!["image".to_owned()], "猫 ".to_owned())
+    );
+    assert_eq!(
+        harvest("#file report "),
+        (vec!["file".to_owned()], "report ".to_owned())
+    );
+    assert_eq!(harvest("#图片"), (vec![], "#图片".to_owned()));
+    assert_eq!(harvest("#nada x "), (vec![], "#nada x ".to_owned()));
+}
+
+#[test]
+fn a_kind_no_longer_shown_apart_still_gets_a_card() {
+    for kind in [Kind::Token, Kind::Json, Kind::Audio, Kind::Video] {
+        let card = card_of(&row(Some(kind)), 1_000_000, None, 2);
+        assert_eq!(card.kind.as_str(), kind.as_str());
+        assert!(!card.title.is_empty());
+    }
 }

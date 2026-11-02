@@ -157,9 +157,9 @@ fn mono_opened(text: &str, cap: i32, english: bool) -> Opened {
     let more = match (rest, english) {
         (0, _) => String::new(),
         (1, true) => "… 1 more line".to_owned(),
-        (1, false) => "… 1 línea más".to_owned(),
+        (1, false) => "… 还有 1 行".to_owned(),
         (rest, true) => format!("… {rest} more lines"),
-        (rest, false) => format!("… {rest} líneas más"),
+        (rest, false) => format!("… 还有 {rest} 行"),
     };
     Opened {
         text: text
@@ -179,7 +179,7 @@ fn shown_of(total: usize, wrapped: i32, cap: i32, english: bool) -> String {
     if english {
         format!("{total} lines · showing the first")
     } else {
-        format!("{total} líneas · mostrando el comienzo")
+        format!("共 {total} 行，仅显示开头")
     }
 }
 
@@ -252,7 +252,7 @@ pub fn lines_said(total: usize, shown: i32, english: bool) -> String {
     if english {
         format!("{total} lines")
     } else {
-        format!("{total} líneas")
+        format!("共 {total} 行")
     }
 }
 

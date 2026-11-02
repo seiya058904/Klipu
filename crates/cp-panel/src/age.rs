@@ -7,30 +7,30 @@ pub fn age_text(now: i64, at: i64) -> String {
 }
 
 fn age_in(english: bool, now: i64, at: i64) -> String {
-    let say = |es: &'static str, en: &'static str| crate::say::pick_in(english, es, en);
+    let say = |zh: &'static str, en: &'static str| crate::say::pick_in(english, zh, en);
     let gone = now - at;
     if gone < MINUTE {
-        return say("ahora", "now").into();
+        return say("刚刚", "now").into();
     }
     if gone < HOUR {
-        return format!("{} min", gone / MINUTE);
+        return format!("{} {}", gone / MINUTE, say("分钟", "min"));
     }
     if gone < DAY {
-        return format!("{} h", gone / HOUR);
+        return format!("{} {}", gone / HOUR, say("小时", "h"));
     }
     if gone < 2 * DAY {
-        return say("ayer", "yesterday").into();
+        return say("昨天", "yesterday").into();
     }
     if gone < 7 * DAY {
-        return format!("{} {}", gone / DAY, say("d", "d"));
+        return format!("{} {}", gone / DAY, say("天", "d"));
     }
     if gone < 30 * DAY {
-        return format!("{} {}", gone / (7 * DAY), say("sem", "w"));
+        return format!("{} {}", gone / (7 * DAY), say("周", "w"));
     }
     if gone < 365 * DAY {
-        return format!("{} {}", gone / (30 * DAY), say("mes", "mo"));
+        return format!("{} {}", gone / (30 * DAY), say("个月", "mo"));
     }
-    format!("{} {}", gone / (365 * DAY), say("a", "y"))
+    format!("{} {}", gone / (365 * DAY), say("年", "y"))
 }
 
 const JUST_NOW: i64 = 10 * MINUTE;
@@ -59,12 +59,12 @@ pub fn when_of(now: i64, at: i64, now_offset: i64, at_offset: i64) -> When {
 }
 
 pub fn when_said(when: When, english: bool) -> &'static str {
-    let say = |es: &'static str, en: &'static str| crate::say::pick_in(english, es, en);
+    let say = |zh: &'static str, en: &'static str| crate::say::pick_in(english, zh, en);
     match when {
-        When::Now => say("Ahora", "Now"),
-        When::Today => say("Hoy", "Today"),
-        When::Yesterday => say("Ayer", "Yesterday"),
-        When::Before => say("Antes", "Earlier"),
+        When::Now => say("刚刚", "Now"),
+        When::Today => say("今天", "Today"),
+        When::Yesterday => say("昨天", "Yesterday"),
+        When::Before => say("更早", "Earlier"),
     }
 }
 
@@ -73,9 +73,6 @@ pub fn clock_of(at: i64, offset: i64) -> String {
     format!("{:02}:{:02}", minutes / 60, minutes % 60)
 }
 
-const MONTHS_ES: [&str; 12] = [
-    "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic",
-];
 const MONTHS_EN: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
@@ -100,12 +97,17 @@ pub fn civil_of(day: i64) -> (i64, usize, i64) {
 pub fn date_of(now: i64, at: i64, now_offset: i64, at_offset: i64, english: bool) -> String {
     let (year, month, day) = civil_of(day_of(at, at_offset));
     let (this_year, _, _) = civil_of(day_of(now, now_offset));
-    let named = if english {
-        MONTHS_EN[month]
-    } else {
-        MONTHS_ES[month]
-    };
-    if year == this_year {
+    let same = year == this_year;
+    if !english {
+        let number = month + 1;
+        return if same {
+            format!("{number}月{day}日")
+        } else {
+            format!("{year}年{number}月{day}日")
+        };
+    }
+    let named = MONTHS_EN[month];
+    if same {
         format!("{day} {named}")
     } else {
         format!("{day} {named} {year}")

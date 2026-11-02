@@ -12,7 +12,7 @@ fn a_fresh_install_keeps_a_month_and_answers_to_a_shortcut() {
     assert!(config.hides_when_left);
     assert_eq!(config.theme, Theme::System);
     assert_eq!(config.locale, None);
-    assert!(config.shortcut.ends_with("Alt+V"), "{}", config.shortcut);
+    assert!(config.shortcut.ends_with("Alt+K"), "{}", config.shortcut);
 }
 
 #[test]

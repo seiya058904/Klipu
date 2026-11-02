@@ -7,6 +7,10 @@ license.workspace = true
 repository.workspace = true
 publish = false
 
+[[bin]]
+name = "klipu-panel"
+path = "src/main.rs"
+
 [dependencies]
 cp-config.workspace = true
 cp-core.workspace = true

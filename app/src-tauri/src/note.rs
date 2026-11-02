@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 pub fn where_to() -> PathBuf {
     crate::settings::folder()
         .map_or_else(std::env::temp_dir, |dir| dir.join("logs"))
-        .join("cp-gui.log")
+        .join("klipu.log")
 }
 
 fn guard(at: &Path, mode: u32) {

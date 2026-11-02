@@ -1,4 +1,4 @@
-use super::{spanish, worded};
+use super::{chinese, worded};
 use tauri::image::Image;
 
 const WINDOWS: &[u8] = include_bytes!("../icons/tray/windows-32.png");
@@ -22,15 +22,15 @@ fn ink(png: &[u8]) -> (u32, usize) {
 }
 
 #[test]
-fn only_a_locale_that_starts_with_es_gets_spanish() {
-    assert!(!spanish(Some("en")));
-    assert!(!spanish(Some("en-GB")));
-    assert!(spanish(Some("es")));
-    assert!(spanish(Some("es-CL")));
-    assert!(spanish(Some("ES-mx")));
-    assert!(!spanish(Some("pt-BR")));
-    assert!(!spanish(Some("fr")));
-    assert!(!spanish(Some("de-DE")));
+fn only_a_locale_that_starts_with_zh_gets_chinese() {
+    assert!(!chinese(Some("en")));
+    assert!(!chinese(Some("en-GB")));
+    assert!(chinese(Some("zh")));
+    assert!(chinese(Some("zh-CN")));
+    assert!(chinese(Some("ZH-tw")));
+    assert!(!chinese(Some("pt-BR")));
+    assert!(!chinese(Some("fr")));
+    assert!(!chinese(Some("de-DE")));
 }
 
 #[test]
@@ -42,21 +42,21 @@ fn the_windows_icon_is_dark_enough_for_a_light_bar() {
 
 #[test]
 fn the_words_come_in_the_order_the_menu_was_built() {
-    for spanish in [true, false] {
-        let said = worded(spanish);
+    for chinese in [true, false] {
+        let said = worded(chinese);
         assert_eq!(said.len(), 4, "reword zips these against the live items");
         assert!(
-            said[0].to_lowercase().contains("panel"),
+            said[0].to_lowercase().contains("panel") || said[0].contains("面板"),
             "the first item shows the panel: {}",
             said[0]
         );
         assert!(
-            said[2].to_lowercase().contains("panel"),
+            said[2].to_lowercase().contains("panel") || said[2].contains("面板"),
             "the third item restarts it: {}",
             said[2]
         );
         assert!(
-            said[3].to_lowercase().contains("copanda"),
+            said[3].to_lowercase().contains("klipu"),
             "the last one leaves: {}",
             said[3]
         );

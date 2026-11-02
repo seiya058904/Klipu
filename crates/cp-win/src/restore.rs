@@ -13,7 +13,7 @@ const JFIF: &str = "JFIF";
 const DROP_EFFECT: &str = "Preferred DropEffect";
 pub const UNRECORDED: [&str; 2] = ["CanIncludeInClipboardHistory", "CanUploadToCloudClipboard"];
 pub const UNWATCHED: &str = "ExcludeClipboardContentFromMonitorProcessing";
-pub const WORN: &str = "CoPanda Worn";
+pub const WORN: &str = "Klipu Worn";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Restored {

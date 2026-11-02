@@ -9,28 +9,23 @@ pub struct Said<R: Runtime>(Mutex<Vec<MenuItem<R>>>);
 #[derive(Default)]
 pub struct Shown(Mutex<Option<cp_core::trouble::Trouble>>);
 
-pub fn spanish(locale: Option<&str>) -> bool {
+pub fn chinese(locale: Option<&str>) -> bool {
     let asked = locale
         .map(str::to_owned)
         .or_else(sys_locale::get_locale)
         .unwrap_or_default();
-    asked.to_lowercase().starts_with("es")
+    asked.to_lowercase().starts_with("zh")
 }
 
-fn worded(spanish: bool) -> [&'static str; 4] {
-    if spanish {
-        [
-            "Mostrar el panel",
-            "Ajustes…",
-            "Reiniciar el panel",
-            "Salir de CoPanda",
-        ]
+fn worded(chinese: bool) -> [&'static str; 4] {
+    if chinese {
+        ["显示面板", "设置…", "重启面板", "退出 Klipu"]
     } else {
         [
             "Show the panel",
             "Settings…",
             "Restart the panel",
-            "Quit CoPanda",
+            "Quit Klipu",
         ]
     }
 }
@@ -62,17 +57,17 @@ fn revive<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-pub fn raise<R: Runtime>(app: &AppHandle<R>, spanish: bool) -> Option<()> {
-    let [shows, asks, again, leaves] = worded(spanish);
+pub fn raise<R: Runtime>(app: &AppHandle<R>, chinese: bool) -> Option<()> {
+    let [shows, asks, again, leaves] = worded(chinese);
     let panel = MenuItem::with_id(app, "panel", shows, true, None::<&str>).ok()?;
     let settings = MenuItem::with_id(app, "settings", asks, true, None::<&str>).ok()?;
     let restart = MenuItem::with_id(app, "restart", again, true, None::<&str>).ok()?;
     let quit = MenuItem::with_id(app, "quit", leaves, true, None::<&str>).ok()?;
     let menu = Menu::with_items(app, &[&panel, &settings, &restart, &quit]).ok()?;
 
-    let tray = TrayIconBuilder::with_id("copypaste")
+    let tray = TrayIconBuilder::with_id("klipu")
         .icon(Image::from_bytes(BAR).ok()?)
-        .tooltip("CoPanda")
+        .tooltip("Klipu")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -103,22 +98,22 @@ pub fn raise<R: Runtime>(app: &AppHandle<R>, spanish: bool) -> Option<()> {
     Some(())
 }
 
-pub fn reword_tip<R: Runtime>(app: &AppHandle<R>, spanish: bool) {
+pub fn reword_tip<R: Runtime>(app: &AppHandle<R>, chinese: bool) {
     let shown = app
         .try_state::<Shown>()
         .and_then(|state| state.0.lock().ok().and_then(|shown| *shown));
-    tell_in(app, shown, spanish);
+    tell_in(app, shown, chinese);
 }
 
 pub fn tell<R: Runtime>(app: &AppHandle<R>, trouble: Option<cp_core::trouble::Trouble>) {
     let locale = crate::settings::settings().ok().and_then(|one| one.locale);
-    tell_in(app, trouble, spanish(locale.as_deref()));
+    tell_in(app, trouble, chinese(locale.as_deref()));
 }
 
 pub fn tell_in<R: Runtime>(
     app: &AppHandle<R>,
     trouble: Option<cp_core::trouble::Trouble>,
-    spanish: bool,
+    chinese: bool,
 ) {
     if let Some(state) = app.try_state::<Shown>()
         && let Ok(mut shown) = state.0.lock()
@@ -126,25 +121,25 @@ pub fn tell_in<R: Runtime>(
         *shown = trouble;
     }
     let said = trouble.map_or_else(
-        || "CoPanda".to_owned(),
-        |what| format!("CoPanda: {}", what.worded(spanish)),
+        || "Klipu".to_owned(),
+        |what| format!("Klipu: {}", what.worded(chinese)),
     );
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
-        if let Some(tray) = handle.tray_by_id("copypaste") {
+        if let Some(tray) = handle.tray_by_id("klipu") {
             let _ = tray.set_tooltip(Some(said));
         }
     });
 }
 
-pub fn reword<R: Runtime>(app: &AppHandle<R>, spanish: bool) {
+pub fn reword<R: Runtime>(app: &AppHandle<R>, chinese: bool) {
     let Some(items) = app.try_state::<Said<R>>() else {
         return;
     };
     let Ok(items) = items.0.lock() else {
         return;
     };
-    for (item, said) in items.iter().zip(worded(spanish)) {
+    for (item, said) in items.iter().zip(worded(chinese)) {
         let _ = item.set_text(said);
     }
 }
@@ -172,7 +167,7 @@ pub fn surface_at<R: Runtime>(app: &AppHandle<R>, rail: Option<&str>) {
     });
     let built = framed(crate::looks::dressed(
         WebviewWindowBuilder::new(app, "main", page)
-            .title("CoPanda")
+            .title("Klipu")
             .inner_size(780.0, 580.0)
             .min_inner_size(620.0, 460.0)
             .center(),

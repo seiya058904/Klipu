@@ -29,8 +29,7 @@ fn each_shortcut_reads_and_writes_its_own_line_of_the_settings() {
 
 #[test]
 fn the_window_names_each_shortcut_the_way_the_settings_spell_it() {
-    let roles: Vec<Role> =
-        serde_json::from_str(r#"["panel","plain","forms"]"#).expect("names it knows");
+    let roles: Vec<Role> = serde_json::from_str(r#"["panel","plain"]"#).expect("names it knows");
     assert_eq!(roles, Role::ALL);
     assert_eq!(Role::default(), Role::Panel);
 }

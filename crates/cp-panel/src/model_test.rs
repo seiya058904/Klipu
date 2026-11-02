@@ -41,7 +41,7 @@ fn a_row_is_built_once_and_read_back_from_the_cache() {
     let rows = open(store_with(3), 5_000);
     let first = rows.row_data(0).expect("fila");
     assert_eq!(first.body.as_str(), "elemento 2");
-    assert_eq!(first.age.as_str(), "ahora");
+    assert_eq!(first.age.as_str(), "刚刚");
     assert!(rows.cards.borrow()[0].is_some());
     let again = rows.row_data(0).expect("from the cache");
     assert_eq!((again.id, again.body.as_str()), (first.id, "elemento 2"));
@@ -439,11 +439,11 @@ fn the_general_list_is_grouped_by_when_it_was_copied() {
     assert_eq!(
         heads,
         vec![
-            (true, "Ahora".to_owned()),
-            (true, "Hoy".to_owned()),
+            (true, "刚刚".to_owned()),
+            (true, "今天".to_owned()),
             (false, String::new()),
-            (true, "Ayer".to_owned()),
-            (true, "Antes".to_owned()),
+            (true, "昨天".to_owned()),
+            (true, "更早".to_owned()),
         ]
     );
     assert_eq!(cards[1].age, "07:00", "inside today the age is the clock");

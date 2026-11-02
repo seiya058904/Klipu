@@ -53,8 +53,8 @@ pub fn run() {
         .setup(|app| {
             let fresh = settings::settle();
             let kept = settings::settings().ok();
-            let spanish = tray::spanish(kept.as_ref().and_then(|one| one.locale.as_deref()));
-            if tray::raise(app.handle(), spanish).is_none() {
+            let chinese = tray::chinese(kept.as_ref().and_then(|one| one.locale.as_deref()));
+            if tray::raise(app.handle(), chinese).is_none() {
                 tray::surface(app.handle());
             }
             waking::settle();
@@ -67,7 +67,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("CoPanda could not start");
+        .expect("Klipu could not start");
 
     app.run(|app, event| match event {
         tauri::RunEvent::ExitRequested {
@@ -94,7 +94,7 @@ fn trouble(app: tauri::AppHandle) -> Option<&'static str> {
 
 #[tauri::command]
 fn relabel(app: tauri::AppHandle, locale: Option<String>) {
-    let spanish = tray::spanish(locale.as_deref());
-    tray::reword(&app, spanish);
-    tray::reword_tip(&app, spanish);
+    let chinese = tray::chinese(locale.as_deref());
+    tray::reword(&app, chinese);
+    tray::reword_tip(&app, chinese);
 }

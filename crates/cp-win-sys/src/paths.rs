@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 pub fn data_dir() -> Option<PathBuf> {
     let local = std::env::var_os("LOCALAPPDATA")?;
-    Some(PathBuf::from(local).join("CopyPaste"))
+    Some(PathBuf::from(local).join("Klipu"))
 }
 
 pub fn database() -> Option<PathBuf> {
@@ -18,7 +18,7 @@ pub fn blobs_dir() -> Option<PathBuf> {
 }
 
 pub fn pastes_dir() -> PathBuf {
-    std::env::temp_dir().join("CopyPaste")
+    std::env::temp_dir().join("Klipu")
 }
 
 #[cfg(test)]

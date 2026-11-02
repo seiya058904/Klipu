@@ -107,7 +107,7 @@ pub fn sweep_seen(dir: &std::path::Path, now: std::time::SystemTime) -> usize {
 }
 
 pub fn where_previews_go() -> std::path::PathBuf {
-    std::env::temp_dir().join("CopyPaste").join("seen")
+    std::env::temp_dir().join("Klipu").join("seen")
 }
 
 pub fn looks_like_a_path(said: &str) -> bool {

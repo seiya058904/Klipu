@@ -7,10 +7,10 @@ use tauri_plugin_opener::OpenerExt;
 const TAIL: u64 = 2 * 1024 * 1024;
 const LINES: usize = 2_000;
 const LOGS: [&str; 4] = [
-    "cp-gui.log.1",
-    "cp-gui.log",
-    "cp-panel.log.1",
-    "cp-panel.log",
+    "klipu.log.1",
+    "klipu.log",
+    "klipu-panel.log.1",
+    "klipu-panel.log",
 ];
 
 fn logs() -> PathBuf {
@@ -52,12 +52,12 @@ pub fn save_report(
 
 pub fn named(stamp: &str) -> String {
     let day = stamp.get(..10).unwrap_or("today");
-    format!("copanda-report-{day}.txt")
+    format!("klipu-report-{day}.txt")
 }
 
 fn report(version: &str) -> String {
     let mut out = format!(
-        "CoPanda {version}\n{}\n{} {}\nwritten: {}\n",
+        "Klipu {version}\n{}\n{} {}\nwritten: {}\n",
         system(),
         std::env::consts::OS,
         std::env::consts::ARCH,

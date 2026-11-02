@@ -71,7 +71,7 @@ fn the_opening_skips_blank_lines_and_drops_the_indent_they_share() {
 fn the_lines_are_counted_only_when_more_than_are_shown() {
     assert_eq!(lines_said(1, 1, false), "");
     assert_eq!(lines_said(2, 2, false), "");
-    assert_eq!(lines_said(12, 2, false), "12 líneas");
+    assert_eq!(lines_said(12, 2, false), "共 12 行");
     assert_eq!(lines_said(12, 2, true), "12 lines");
 }
 

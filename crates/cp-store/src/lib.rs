@@ -33,12 +33,10 @@ pub enum Error {
     TooBig { size: usize },
     #[error("there is no item {id}")]
     NoSuchItem { id: i64 },
-    #[error("the file is not a CoPanda backup")]
+    #[error("the file is not a Klipu or CoPanda backup")]
     NotABackup,
     #[error("a copy cannot be written over the history it is copying")]
     OntoItself,
-    #[error("the file is not CopyPaste 2's history")]
-    NotTheFormerOne,
     #[error("the backup is at format {found} and this version understands up to {supported}")]
     BackupFromTheFuture { found: u32, supported: u32 },
     #[error("the cursor is for one order ({cursor}) and the list for another ({order})")]

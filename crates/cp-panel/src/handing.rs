@@ -133,10 +133,9 @@ pub enum Refused {
 impl Refused {
     pub fn said(self) -> &'static str {
         match self {
-            Refused::Textless => crate::say::pick(
-                "no tiene texto para pegarlo en plano",
-                "it has no text to paste as plain",
-            ),
+            Refused::Textless => {
+                crate::say::pick("这一项没有可粘贴的文本", "it has no text to paste as plain")
+            }
             Refused::Failed => crate::app::busy(),
         }
     }

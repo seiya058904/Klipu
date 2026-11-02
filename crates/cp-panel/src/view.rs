@@ -73,7 +73,7 @@ fn trim_left(lead: &str) -> String {
 
 pub fn alert_of(row: &Listed) -> &'static str {
     if row.broken_since.is_some() {
-        return crate::say::pick("No encontrado", "Not found");
+        return crate::say::pick("未找到", "Not found");
     }
     ""
 }
@@ -322,7 +322,7 @@ fn more_than_shown(row: &Listed) -> String {
     if crate::say::in_english() {
         format!("+{rest} more lines")
     } else {
-        format!("+{rest} líneas más")
+        format!("还有 {rest} 行")
     }
 }
 
@@ -403,7 +403,7 @@ pub fn body_of(row: &Listed) -> String {
 }
 
 pub fn nothing_visible_in(english: bool) -> &'static str {
-    crate::say::pick_in(english, "Sin texto visible", "No visible text")
+    crate::say::pick_in(english, "无可见文本", "No visible text")
 }
 
 fn invisible(one: char) -> bool {
@@ -434,27 +434,27 @@ pub fn says_nothing(row: &Listed) -> bool {
 }
 
 pub fn label_of(kind: Option<Kind>) -> &'static str {
-    let (es, en) = label_pair(kind);
-    crate::say::pick(es, en)
+    let (zh, en) = label_pair(kind);
+    crate::say::pick(zh, en)
 }
 
 fn label_pair(kind: Option<Kind>) -> (&'static str, &'static str) {
     match kind {
-        Some(Kind::Text) | None => ("Texto", "Text"),
-        Some(Kind::Code) => ("Código", "Code"),
+        Some(Kind::Text) | None => ("文本", "Text"),
+        Some(Kind::Code) => ("代码", "Code"),
         Some(Kind::Json) => ("JSON", "JSON"),
-        Some(Kind::Link) => ("Enlace", "Link"),
-        Some(Kind::Email) => ("Correo", "Email"),
-        Some(Kind::Phone) => ("Teléfono", "Phone"),
-        Some(Kind::Color) => ("Color", "Colour"),
+        Some(Kind::Link) => ("链接", "Link"),
+        Some(Kind::Email) => ("邮箱", "Email"),
+        Some(Kind::Phone) => ("电话", "Phone"),
+        Some(Kind::Color) => ("颜色", "Colour"),
         Some(Kind::Ip) => ("IP", "IP"),
         Some(Kind::Uuid) => ("UUID", "UUID"),
-        Some(Kind::Image) => ("Imagen", "Image"),
-        Some(Kind::File) => ("Archivo", "File"),
-        Some(Kind::Folder) => ("Carpeta", "Folder"),
-        Some(Kind::Audio) => ("Audio", "Audio"),
-        Some(Kind::Video) => ("Video", "Video"),
-        Some(Kind::Token) => ("Token", "Token"),
+        Some(Kind::Image) => ("图片", "Image"),
+        Some(Kind::File) => ("文件", "File"),
+        Some(Kind::Folder) => ("文件夹", "Folder"),
+        Some(Kind::Audio) => ("音频", "Audio"),
+        Some(Kind::Video) => ("视频", "Video"),
+        Some(Kind::Token) => ("令牌", "Token"),
     }
 }
 
@@ -556,38 +556,35 @@ pub fn empty_of(query: &str, pinned: bool, kinds: bool) -> (String, String) {
 }
 
 fn empty_in(english: bool, query: &str, pinned: bool, kinds: bool) -> (String, String) {
-    let say = |es: &'static str, en: &'static str| crate::say::pick_in(english, es, en).to_owned();
+    let say = |zh: &'static str, en: &'static str| crate::say::pick_in(english, zh, en).to_owned();
     let query = query.trim();
     if query.is_empty() {
         return match (pinned, kinds) {
             (true, _) => (
-                say("No hay nada anclado", "Nothing is pinned"),
+                say("还没有置顶内容", "Nothing is pinned"),
                 say(
-                    "Ancla lo que uses seguido y se queda a mano",
+                    "把常用内容置顶，随时可取",
                     "Pin what you use often and it stays within reach",
                 ),
             ),
             (false, true) => (
-                say("No hay nada de este tipo", "Nothing of this kind"),
-                say(
-                    "Quita el filtro para ver todo",
-                    "Drop the filter to see everything",
-                ),
+                say("没有这一类内容", "Nothing of this kind"),
+                say("移除筛选以查看全部", "Drop the filter to see everything"),
             ),
             (false, false) => (
-                say("Todavía no hay nada", "Nothing here yet"),
-                say("Lo que copies aparece aquí", "What you copy shows up here"),
+                say("这里还是空的", "Nothing here yet"),
+                say("复制的内容会出现在这里", "What you copy shows up here"),
             ),
         };
     }
     let shown = shorten(query);
-    let asked = crate::say::pick_in(english, "Nada coincide con «{}»", "Nothing matches “{}”")
-        .replace("{}", &shown);
+    let asked =
+        crate::say::pick_in(english, "没有找到“{}”", "Nothing matches “{}”").replace("{}", &shown);
     if !query.chars().any(char::is_alphanumeric) {
         return (
             asked,
             say(
-                "La búsqueda va por palabras: los signos solos no se buscan",
+                "不支持只搜索标点符号",
                 "Search goes by words: punctuation alone is not searched",
             ),
         );
@@ -596,12 +593,12 @@ fn empty_in(english: bool, query: &str, pinned: bool, kinds: bool) -> (String, S
         (
             asked,
             say(
-                "Prueba con menos letras o quita el filtro",
+                "换个更短的词，或移除筛选",
                 "Try fewer letters, or drop the filter",
             ),
         )
     } else {
-        (asked, say("Prueba con menos letras", "Try fewer letters"))
+        (asked, say("换个更短的词试试", "Try fewer letters"))
     }
 }
 
@@ -619,32 +616,32 @@ pub fn count_text(count: i64) -> String {
 
 fn count_in(english: bool, count: i64) -> String {
     match (count, english) {
-        (0, false) => "sin elementos".into(),
+        (0, false) => "暂无内容".into(),
         (0, true) => "nothing kept".into(),
-        (1, false) => "1 elemento".into(),
+        (1, false) => "1 项".into(),
         (1, true) => "1 item".into(),
-        (n, false) => format!("{n} elementos"),
+        (n, false) => format!("{n} 项"),
         (n, true) => format!("{n} items"),
     }
 }
 
-const FOOTER_ES: &str = "pegar · shift+enter: en plano";
+const FOOTER_ZH: &str = "粘贴 · Shift+Enter 纯文本";
 const FOOTER_EN: &str = "paste · shift+enter: plain text";
 
 pub fn dress_words(ui: &crate::Panel) {
     use slint::ComponentHandle;
     let words = ui.global::<crate::Words>();
-    words.set_hint(crate::say::pick("Busca o filtra con #", "Search, or filter with #").into());
-    words.set_footer(crate::say::pick(FOOTER_ES, FOOTER_EN).into());
-    words.set_paste_it(crate::say::pick("Pegar", "Paste").into());
-    words.set_paste_plain(crate::say::pick("Plano", "Plain").into());
-    words.set_open_it(crate::say::pick("abrir", "open").into());
-    words.set_name_it(crate::say::pick("poner nombre", "give it a name").into());
+    words.set_hint(crate::say::pick("搜索，或用 # 筛选", "Search, or filter with #").into());
+    words.set_footer(crate::say::pick(FOOTER_ZH, FOOTER_EN).into());
+    words.set_paste_it(crate::say::pick("粘贴", "Paste").into());
+    words.set_paste_plain(crate::say::pick("纯文本", "Plain").into());
+    words.set_open_it(crate::say::pick("打开", "open").into());
+    words.set_name_it(crate::say::pick("命名", "give it a name").into());
     words.set_name_room(i32::try_from(NAME_ROOM).unwrap_or(i32::MAX));
-    words.set_copy_it(crate::say::pick("copiar sin pegar", "copy without pasting").into());
-    words.set_pin(crate::say::pick("anclar", "pin").into());
-    words.set_unpin(crate::say::pick("desanclar", "unpin").into());
-    words.set_remove(crate::say::pick("borrar", "delete").into());
+    words.set_copy_it(crate::say::pick("仅复制", "copy without pasting").into());
+    words.set_pin(crate::say::pick("置顶", "pin").into());
+    words.set_unpin(crate::say::pick("取消置顶", "unpin").into());
+    words.set_remove(crate::say::pick("删除", "delete").into());
 }
 
 #[cfg(test)]

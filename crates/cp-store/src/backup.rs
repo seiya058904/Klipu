@@ -3,7 +3,7 @@ use rusqlite::Connection;
 use std::path::Path;
 
 pub const FORMAT: u32 = 1;
-pub const EXTENSION: &str = "cpbackup";
+pub const EXTENSION: &str = "klipubak";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Made {

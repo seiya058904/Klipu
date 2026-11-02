@@ -406,7 +406,7 @@ impl App {
             if let Some(ui) = ui.upgrade() {
                 if handed {
                     following(&ui, &state, i64::from(id));
-                    complain(&ui, crate::say::pick("copiado", "copied"));
+                    complain(&ui, crate::say::pick("已复制", "copied"));
                 } else {
                     complain(&ui, busy());
                 }
@@ -885,12 +885,12 @@ fn aimed(state: &Rc<RefCell<State>>) -> Aimed {
 pub fn busy() -> &'static str {
     if crate::here::read_stuck() {
         return crate::say::pick(
-            "una app dejó de responder con lo copiado; reinicia CoPanda",
+            "有应用在剪贴板操作中无响应，请重启 Klipu",
             "an app stopped answering about what it copied; restart CoPanda",
         );
     }
     crate::say::pick(
-        "no se pudo pegar: el portapapeles está ocupado",
+        "无法粘贴：剪贴板被占用",
         "could not paste: the clipboard is busy",
     )
 }

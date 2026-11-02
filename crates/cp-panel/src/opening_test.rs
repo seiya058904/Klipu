@@ -269,7 +269,7 @@ fn where_previews_go_is_a_folder_of_ours_inside_the_temporary_one() {
     assert!(at.starts_with(std::env::temp_dir()));
     assert!(at.ends_with("seen"));
     assert!(
-        at.parent().is_some_and(|one| one.ends_with("CopyPaste")),
+        at.parent().is_some_and(|one| one.ends_with("Klipu")),
         "what is written out in the clear lives under our own name: {at:?}"
     );
 }

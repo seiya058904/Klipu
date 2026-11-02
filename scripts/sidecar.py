@@ -33,12 +33,12 @@ def main() -> int:
     where = ROOT / "target"
     if crossing:
         where = where / triple
-    made = where / ("release" if release else "debug") / f"cp-panel{tail}"
+    made = where / ("release" if release else "debug") / f"klipu-panel{tail}"
     if not made.exists():
         raise SystemExit(f"{made} was not found")
 
     WHERE.mkdir(parents=True, exist_ok=True)
-    named = f"cp-panel-{triple}{tail}"
+    named = f"klipu-panel-{triple}{tail}"
     for landed in (WHERE / named, made.parent / named):
         shutil.copy2(made, landed)
         print(f"{landed.relative_to(ROOT)} ready from {made.relative_to(ROOT)}")

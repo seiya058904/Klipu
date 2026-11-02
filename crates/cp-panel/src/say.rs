@@ -7,7 +7,7 @@ pub fn english_for(locale: Option<&str>) -> bool {
         .map(str::to_owned)
         .or_else(sys_locale::get_locale)
         .unwrap_or_default();
-    !asked.to_lowercase().starts_with("es")
+    !asked.to_lowercase().starts_with("zh")
 }
 
 pub fn adopt_english(english: bool) {
@@ -18,12 +18,12 @@ pub fn in_english() -> bool {
     ENGLISH.load(Ordering::Relaxed)
 }
 
-pub fn pick(es: &'static str, en: &'static str) -> &'static str {
-    pick_in(in_english(), es, en)
+pub fn pick(zh: &'static str, en: &'static str) -> &'static str {
+    pick_in(in_english(), zh, en)
 }
 
-pub fn pick_in(english: bool, es: &'static str, en: &'static str) -> &'static str {
-    if english { en } else { es }
+pub fn pick_in(english: bool, zh: &'static str, en: &'static str) -> &'static str {
+    if english { en } else { zh }
 }
 
 #[cfg(test)]

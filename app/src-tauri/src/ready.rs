@@ -29,7 +29,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>) {
         LABEL,
         WebviewUrl::App("index.html#ready".into()),
     ))
-    .title("CoPanda")
+    .title("Klipu")
     .inner_size(WIDE, TALL)
     .position(at.x, at.y)
     .resizable(false)

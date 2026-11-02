@@ -60,7 +60,7 @@ pub fn named_as(label: Option<&str>, bytes: &[u8]) -> Option<String> {
 }
 
 pub fn where_dragged_go() -> PathBuf {
-    std::env::temp_dir().join("CopyPaste").join("dragged")
+    std::env::temp_dir().join("Klipu").join("dragged")
 }
 
 pub fn sweep_dragged(dir: &Path, now: SystemTime) -> usize {

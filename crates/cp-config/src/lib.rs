@@ -9,9 +9,9 @@ pub use look::{Accent, Density, TextSize};
 
 pub const FILE: &str = "config.toml";
 
-pub const SHORTCUT: &str = "Ctrl+Alt+V";
+pub const SHORTCUT: &str = "Ctrl+Alt+K";
 
-pub const PLAIN_SHORTCUT: &str = "Alt+Shift+V";
+pub const PLAIN_SHORTCUT: &str = "Ctrl+Alt+Shift+K";
 
 pub const THE_SYSTEMS: &[&str] = &[
     "Ctrl+C",

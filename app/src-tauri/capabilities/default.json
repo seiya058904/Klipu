@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Lo que la ventana de ajustes necesita y nada más",
+  "description": "What the settings window needs and nothing more",
   "windows": [
     "main",
     "welcome"
@@ -15,28 +15,7 @@
       "identifier": "opener:allow-open-url",
       "allow": [
         {
-          "url": "https://rgdevment.com/*"
-        },
-        {
-          "url": "https://www.tisty.app/*"
-        },
-        {
-          "url": "https://www.linkunbound.app/*"
-        },
-        {
           "url": "https://github.com/*"
-        },
-        {
-          "url": "https://buymeacoffee.com/*"
-        },
-        {
-          "url": "https://alternativeto.net/*"
-        },
-        {
-          "url": "ms-windows-store://*"
-        },
-        {
-          "url": "x-apple.systempreferences://*"
         }
       ]
     },

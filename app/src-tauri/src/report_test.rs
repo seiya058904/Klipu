@@ -50,10 +50,7 @@ fn the_tail_starts_on_a_whole_line_and_keeps_the_end() {
 
 #[test]
 fn the_report_is_named_after_the_day_it_was_saved() {
-    assert_eq!(
-        named("2026-10-10 12:00:00Z"),
-        "copanda-report-2026-10-10.txt"
-    );
+    assert_eq!(named("2026-10-10 12:00:00Z"), "klipu-report-2026-10-10.txt");
 }
 
 #[test]

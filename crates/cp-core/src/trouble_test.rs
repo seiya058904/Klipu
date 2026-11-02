@@ -74,7 +74,7 @@ fn the_english_words_are_the_ones_the_log_already_used() {
     );
     assert_eq!(
         Trouble::Unsteady.worded(true),
-        "el panel no se mantiene abierto; reinicia CoPanda"
+        "面板无法保持运行，请重启 Klipu"
     );
 }
 

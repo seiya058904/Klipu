@@ -2,7 +2,7 @@ use cp_core::trouble::Trouble;
 use std::path::Path;
 
 pub fn where_to() -> std::path::PathBuf {
-    folder().join("cp-panel.log")
+    folder().join("klipu-panel.log")
 }
 
 fn real_folder() -> std::path::PathBuf {

@@ -68,7 +68,7 @@ pub fn counted_in(path: &std::path::Path) -> Option<usize> {
 }
 
 pub fn said_in(meta: Option<&std::collections::HashMap<String, String>>, english: bool) -> String {
-    let say = |es: &'static str, en: &'static str| crate::say::pick_in(english, es, en);
+    let say = |zh: &'static str, en: &'static str| crate::say::pick_in(english, zh, en);
     let Some(seen) = meta
         .and_then(|one| one.get(ENTRIES))
         .and_then(|one| one.parse::<usize>().ok())
@@ -76,15 +76,15 @@ pub fn said_in(meta: Option<&std::collections::HashMap<String, String>>, english
         return String::new();
     };
     let what = if seen == 1 {
-        say("elemento", "entry")
+        say("项", "entry")
     } else {
-        say("elementos", "entries")
+        say("项", "entries")
     };
     if seen >= UP_TO {
         return if english {
             format!("more than {seen} {what}")
         } else {
-            format!("más de {seen} {what}")
+            format!("超过 {seen} {what}")
         };
     }
     format!("{seen} {what}")

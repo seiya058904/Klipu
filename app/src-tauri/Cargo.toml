@@ -14,6 +14,10 @@ workspace = true
 name = "cp_gui_lib"
 crate-type = ["rlib"]
 
+[[bin]]
+name = "klipu"
+path = "src/main.rs"
+
 [build-dependencies]
 tauri-build.workspace = true
 

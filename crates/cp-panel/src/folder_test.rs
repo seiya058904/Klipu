@@ -77,17 +77,17 @@ fn counted(seen: usize) -> std::collections::HashMap<String, String> {
 
 #[test]
 fn what_was_counted_is_said_in_both_tongues() {
-    assert_eq!(said_in(Some(&counted(412)), false), "412 elementos");
+    assert_eq!(said_in(Some(&counted(412)), false), "412 项");
     assert_eq!(said_in(Some(&counted(412)), true), "412 entries");
-    assert_eq!(said_in(Some(&counted(1)), false), "1 elemento");
+    assert_eq!(said_in(Some(&counted(1)), false), "1 项");
     assert_eq!(said_in(Some(&counted(1)), true), "1 entry");
-    assert_eq!(said_in(Some(&counted(0)), false), "0 elementos");
+    assert_eq!(said_in(Some(&counted(0)), false), "0 项");
 }
 
 #[test]
 fn a_count_that_hit_the_ceiling_admits_it_is_a_floor() {
     let said = said_in(Some(&counted(UP_TO)), false);
-    assert_eq!(said, format!("más de {UP_TO} elementos"));
+    assert_eq!(said, format!("超过 {UP_TO} 项"));
     assert_eq!(
         said_in(Some(&counted(UP_TO)), true),
         format!("more than {UP_TO} entries")

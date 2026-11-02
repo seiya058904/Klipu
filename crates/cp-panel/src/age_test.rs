@@ -3,38 +3,38 @@ use super::*;
 #[test]
 fn the_age_reads_the_way_the_card_shows_it() {
     let now = 10 * DAY;
-    assert_eq!(age_text(now, now - 5_000), "ahora");
-    assert_eq!(age_text(now, now - 9 * MINUTE), "9 min");
-    assert_eq!(age_text(now, now - 3 * HOUR), "3 h");
-    assert_eq!(age_text(now, now - 30 * HOUR), "ayer");
-    assert_eq!(age_text(now, now - 3 * DAY), "3 d");
-    assert_eq!(age_text(now, now - 9 * DAY), "1 sem");
-    assert_eq!(age_text(now, now - 100 * DAY), "3 mes");
-    assert_eq!(age_text(now, now - 800 * DAY), "2 a");
+    assert_eq!(age_text(now, now - 5_000), "刚刚");
+    assert_eq!(age_text(now, now - 9 * MINUTE), "9 分钟");
+    assert_eq!(age_text(now, now - 3 * HOUR), "3 小时");
+    assert_eq!(age_text(now, now - 30 * HOUR), "昨天");
+    assert_eq!(age_text(now, now - 3 * DAY), "3 天");
+    assert_eq!(age_text(now, now - 9 * DAY), "1 周");
+    assert_eq!(age_text(now, now - 100 * DAY), "3 个月");
+    assert_eq!(age_text(now, now - 800 * DAY), "2 年");
 }
 
 #[test]
 fn each_unit_starts_exactly_at_its_threshold() {
     let now = 1_000 * DAY;
-    assert_eq!(age_text(now, now - MINUTE + 1), "ahora");
-    assert_eq!(age_text(now, now - MINUTE), "1 min");
-    assert_eq!(age_text(now, now - HOUR + 1), "59 min");
-    assert_eq!(age_text(now, now - HOUR), "1 h");
-    assert_eq!(age_text(now, now - DAY + 1), "23 h");
-    assert_eq!(age_text(now, now - DAY), "ayer");
-    assert_eq!(age_text(now, now - 2 * DAY + 1), "ayer");
-    assert_eq!(age_text(now, now - 2 * DAY), "2 d");
-    assert_eq!(age_text(now, now - 7 * DAY + 1), "6 d");
-    assert_eq!(age_text(now, now - 7 * DAY), "1 sem");
-    assert_eq!(age_text(now, now - 30 * DAY + 1), "4 sem");
-    assert_eq!(age_text(now, now - 30 * DAY), "1 mes");
-    assert_eq!(age_text(now, now - 365 * DAY + 1), "12 mes");
-    assert_eq!(age_text(now, now - 365 * DAY), "1 a");
+    assert_eq!(age_text(now, now - MINUTE + 1), "刚刚");
+    assert_eq!(age_text(now, now - MINUTE), "1 分钟");
+    assert_eq!(age_text(now, now - HOUR + 1), "59 分钟");
+    assert_eq!(age_text(now, now - HOUR), "1 小时");
+    assert_eq!(age_text(now, now - DAY + 1), "23 小时");
+    assert_eq!(age_text(now, now - DAY), "昨天");
+    assert_eq!(age_text(now, now - 2 * DAY + 1), "昨天");
+    assert_eq!(age_text(now, now - 2 * DAY), "2 天");
+    assert_eq!(age_text(now, now - 7 * DAY + 1), "6 天");
+    assert_eq!(age_text(now, now - 7 * DAY), "1 周");
+    assert_eq!(age_text(now, now - 30 * DAY + 1), "4 周");
+    assert_eq!(age_text(now, now - 30 * DAY), "1 个月");
+    assert_eq!(age_text(now, now - 365 * DAY + 1), "12 个月");
+    assert_eq!(age_text(now, now - 365 * DAY), "1 年");
 }
 
 #[test]
 fn a_clock_that_runs_behind_the_item_is_still_now() {
-    assert_eq!(age_text(100, 5_000), "ahora");
+    assert_eq!(age_text(100, 5_000), "刚刚");
 }
 
 #[test]
@@ -86,7 +86,7 @@ fn what_was_copied_falls_into_now_today_yesterday_or_before() {
 fn inside_a_group_the_age_is_a_clock_or_a_date() {
     assert_eq!(
         age_in_group(NOON_UTC, 1_791_201_300_000, 0, 0, false),
-        "5 min"
+        "5 分钟"
     );
     assert_eq!(
         age_in_group(NOON_UTC, 1_791_167_400_000, 0, 0, false),
@@ -98,7 +98,7 @@ fn inside_a_group_the_age_is_a_clock_or_a_date() {
     );
     assert_eq!(
         age_in_group(NOON_UTC, 1_788_426_000_000, 0, 0, false),
-        "3 sep"
+        "9月3日"
     );
     assert_eq!(
         age_in_group(NOON_UTC, 1_788_426_000_000, 0, 0, true),
@@ -106,7 +106,7 @@ fn inside_a_group_the_age_is_a_clock_or_a_date() {
     );
     assert_eq!(
         age_in_group(NOON_UTC, 1_767_222_000_000, 0, 0, false),
-        "31 dic 2025"
+        "2025年12月31日"
     );
     assert_eq!(clock_of(1_791_167_400_000, SANTIAGO), "23:30");
 }
