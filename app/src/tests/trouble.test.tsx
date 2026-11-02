@@ -37,11 +37,11 @@ describe("the buttons for when something goes wrong", () => {
     const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
     render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Guardar informe…" }));
-    expect(await screen.findByText("Informe guardado.")).toBeDefined();
+    await who.click(await screen.findByRole("button", { name: "保存诊断报告…" }));
+    expect(await screen.findByText("报告已保存。")).toBeDefined();
     expect(said.asked).toEqual(["save_report"]);
 
-    await who.click(screen.getByRole("button", { name: "Mostrar en la carpeta" }));
+    await who.click(screen.getByRole("button", { name: "在文件夹中显示" }));
     expect(vi.mocked(revealItemInDir)).toHaveBeenCalledWith("/donde/informe.txt");
   });
 
@@ -51,11 +51,11 @@ describe("the buttons for when something goes wrong", () => {
     undo.push(said.undo);
     render(<About />);
 
-    const button = await screen.findByRole("button", { name: "Guardar informe…" });
+    const button = await screen.findByRole("button", { name: "保存诊断报告…" });
     await who.click(button);
     await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
-    expect(screen.queryByText("Informe guardado.")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Mostrar en la carpeta" })).toBeNull();
+    expect(screen.queryByText("报告已保存。")).toBeNull();
+    expect(screen.queryByRole("button", { name: "在文件夹中显示" })).toBeNull();
   });
 
   it("tell when the report could not be saved", async () => {
@@ -64,8 +64,8 @@ describe("the buttons for when something goes wrong", () => {
     undo.push(said.undo);
     render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Guardar informe…" }));
-    expect(await screen.findByText("No se pudo guardar el informe")).toBeDefined();
+    await who.click(await screen.findByRole("button", { name: "保存诊断报告…" }));
+    expect(await screen.findByText("无法保存报告")).toBeDefined();
   });
 
   it("tell when the saved report is no longer there to be shown", async () => {
@@ -76,9 +76,9 @@ describe("the buttons for when something goes wrong", () => {
     vi.mocked(revealItemInDir).mockRejectedValueOnce("gone");
     render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Guardar informe…" }));
-    await who.click(await screen.findByRole("button", { name: "Mostrar en la carpeta" }));
-    expect(await screen.findByText("No se encontró el informe donde se guardó")).toBeDefined();
+    await who.click(await screen.findByRole("button", { name: "保存诊断报告…" }));
+    await who.click(await screen.findByRole("button", { name: "在文件夹中显示" }));
+    expect(await screen.findByText("在保存位置找不到报告")).toBeDefined();
   });
 
   it("open the log folder, and tell when it would not open", async () => {
@@ -87,8 +87,8 @@ describe("the buttons for when something goes wrong", () => {
     undo.push(said.undo);
     render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Abrir el registro" }));
+    await who.click(await screen.findByRole("button", { name: "打开日志" }));
     expect(said.asked).toEqual(["open_log"]);
-    expect(await screen.findByText("No se pudo abrir la carpeta del registro")).toBeDefined();
+    expect(await screen.findByText("无法打开日志文件夹")).toBeDefined();
   });
 });

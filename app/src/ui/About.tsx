@@ -4,8 +4,8 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
 import { licences, notices } from "../core";
 import { fill, t } from "../locales";
-import { composed } from "../markdown";
 import mark from "../mark.svg";
+import { composed } from "../markdown";
 import { CloudOff, Code, Gift, Info, Key } from "./Icons";
 
 const REPOSITORY = "https://github.com/seiya058904/Klipu";

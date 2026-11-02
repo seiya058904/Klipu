@@ -306,7 +306,6 @@ fn combining_marks_disappear_whatever_the_script() {
 fn what_has_nothing_to_fold_comes_out_as_it_went_in() {
     assert_eq!(fold(""), "");
     assert_eq!(fold("plain ascii"), "plain ascii");
-    assert_eq!(fold("日本語"), "日本語");
     assert_eq!(fold("123 !?"), "123 !?");
 }
 
@@ -404,4 +403,37 @@ fn a_guessed_spelling_is_marked_and_found_like_the_typed_one() {
         found.segments,
         vec![plain("sera "), hit("cormanilo"), plain(".")]
     );
+}
+
+#[test]
+fn chinese_is_folded_into_single_characters_and_typed_as_one_phrase() {
+    assert_eq!(
+        fold("开会").split_whitespace().collect::<Vec<_>>(),
+        ["开", "会"]
+    );
+    assert_eq!(texts("开会"), ["开 会"]);
+    assert_eq!(texts("开会 计划"), ["开 会", "计 划"]);
+    assert_eq!(texts("nginx配置"), ["nginx", "配 置"]);
+    assert_eq!(texts("配置nginx"), ["配 置", "nginx"]);
+}
+
+#[test]
+fn a_chinese_phrase_needs_its_characters_next_to_each_other() {
+    let phrase = terms_of("开会");
+    assert!(holds("明天下午三点开会讨论", &phrase));
+    assert!(!holds("开始讨论，然后聚会", &phrase));
+    assert!(holds("明天下午三点开会讨论", &terms_of("开会 ")));
+}
+
+#[test]
+fn a_chinese_hit_is_highlighted_as_a_whole() {
+    let found = excerpt("明天下午三点开会讨论", &terms_of("开会"), 160).expect("found");
+    let hit: Vec<&str> = found
+        .segments
+        .iter()
+        .filter(|one| one.matched)
+        .map(|one| one.text.as_str())
+        .collect();
+    assert_eq!(hit, ["开会"]);
+    assert_eq!(found.plain(), "明天下午三点开会讨论");
 }

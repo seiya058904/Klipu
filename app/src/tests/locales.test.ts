@@ -2,18 +2,18 @@ import { afterEach, describe, expect, it } from "vitest";
 import { adopt, inEnglish, panelTroubleSaid } from "../locales";
 
 describe("the language the window speaks", () => {
-  afterEach(() => adopt("es"));
+  afterEach(() => adopt("zh"));
 
-  it("speaks Spanish only to a locale that starts with es", () => {
-    for (const locale of ["es", "es-CL", "ES-mx"]) {
+  it("speaks Chinese only to a locale that starts with zh", () => {
+    for (const locale of ["zh", "zh-CN", "ZH-tw"]) {
       adopt(locale);
       expect(inEnglish(), locale).toBe(false);
-      expect(document.documentElement.lang).toBe("es");
+      expect(document.documentElement.lang).toBe("zh-CN");
     }
   });
 
   it("speaks English to every other locale, not only to en", () => {
-    for (const locale of ["en", "en-GB", "pt-BR", "fr", "de-DE", ""]) {
+    for (const locale of ["en", "en-GB", "es-CL", "pt-BR", "fr"]) {
       adopt(locale);
       expect(inEnglish(), locale).toBe(true);
       expect(document.documentElement.lang).toBe("en");
@@ -22,7 +22,7 @@ describe("the language the window speaks", () => {
 });
 
 describe("what the panel's trouble says", () => {
-  afterEach(() => adopt("es"));
+  afterEach(() => adopt("zh"));
 
   const KEYS = [
     "unstarted",
@@ -38,7 +38,7 @@ describe("what the panel's trouble says", () => {
   ];
 
   it("gives every key the panel sends its own words in both languages", () => {
-    for (const locale of ["es", "en"]) {
+    for (const locale of ["zh", "en"]) {
       adopt(locale);
       const unknown = panelTroubleSaid("no-such-trouble");
       const said = KEYS.map((key) => panelTroubleSaid(key));
@@ -50,8 +50,8 @@ describe("what the panel's trouble says", () => {
   });
 
   it("is said in the language the window speaks", () => {
-    adopt("es");
-    expect(panelTroubleSaid("stopped")).toContain("dejó de vigilar el portapapeles");
+    adopt("zh");
+    expect(panelTroubleSaid("stopped")).toContain("已停止监听剪贴板");
     adopt("en");
     expect(panelTroubleSaid("stopped")).toContain("stopped watching the clipboard");
   });

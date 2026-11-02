@@ -37,7 +37,7 @@ describe("the notices each bundled licence asks for", () => {
     undo.push(said.undo);
     render(<About />);
 
-    const button = await screen.findByRole("button", { name: "Avisos de terceros" });
+    const button = await screen.findByRole("button", { name: "第三方声明" });
     expect(said.asked()).toBe(0);
 
     await who.click(button);
@@ -62,7 +62,7 @@ describe("the notices each bundled licence asks for", () => {
     undo.push(said.undo);
     render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Avisos de terceros" }));
+    await who.click(await screen.findByRole("button", { name: "第三方声明" }));
 
     const cell = await screen.findByRole("cell", { name: "react" });
     expect(cell.closest("table")).toBeTruthy();
@@ -77,7 +77,7 @@ describe("the notices each bundled licence asks for", () => {
     undo.push(said.undo);
     const { container } = render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Avisos de terceros" }));
+    await who.click(await screen.findByRole("button", { name: "第三方声明" }));
 
     expect(await screen.findByText(/y nada más/)).toBeDefined();
     expect(container.querySelector(".notices img")).toBeNull();
@@ -90,7 +90,7 @@ describe("the notices each bundled licence asks for", () => {
     undo.push(said.undo);
     render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Avisos de terceros" }));
+    await who.click(await screen.findByRole("button", { name: "第三方声明" }));
     await who.click(await screen.findByRole("link", { name: "https://crates.io/crates/slint" }));
 
     expect(invoke).toHaveBeenCalledWith("open_web", { url: "https://crates.io/crates/slint" });
@@ -116,13 +116,13 @@ describe("the notices each bundled licence asks for", () => {
     undo.push(said.undo);
     render(<About />);
 
-    const button = await screen.findByRole("button", { name: "Avisos de terceros" });
+    const button = await screen.findByRole("button", { name: "第三方声明" });
     await who.click(button);
-    expect(await screen.findByText("No se pudieron leer los avisos de terceros")).toBeDefined();
+    expect(await screen.findByText("无法读取第三方声明")).toBeDefined();
 
     await who.click(button);
     expect(await screen.findByText("MIT License")).toBeDefined();
-    expect(screen.queryByText("No se pudieron leer los avisos de terceros")).toBeNull();
+    expect(screen.queryByText("无法读取第三方声明")).toBeNull();
   });
 
   it("the licence texts have their own button, and are only fetched when it opens", async () => {
@@ -141,11 +141,11 @@ describe("the notices each bundled licence asks for", () => {
     undo.push(() => vi.mocked(invoke).mockImplementation(real as never));
     render(<About />);
 
-    const button = await screen.findByRole("button", { name: "Textos de las licencias" });
+    const button = await screen.findByRole("button", { name: "许可证全文" });
     expect(asked).toBe(0);
 
     await who.click(button);
-    expect(await screen.findByRole("region", { name: "Textos de las licencias" })).toBeDefined();
+    expect(await screen.findByRole("region", { name: "许可证全文" })).toBeDefined();
     expect(screen.getByText("Apache License")).toBeDefined();
     expect(screen.queryByText("Avisos de la ventana")).toBeNull();
     expect(asked).toBe(1);
@@ -165,11 +165,9 @@ describe("the notices each bundled licence asks for", () => {
     undo.push(() => vi.mocked(invoke).mockImplementation(real as never));
     render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Textos de las licencias" }));
+    await who.click(await screen.findByRole("button", { name: "许可证全文" }));
 
-    expect(
-      await screen.findByText("No se pudieron leer los textos de las licencias"),
-    ).toBeDefined();
+    expect(await screen.findByText("无法读取许可证全文")).toBeDefined();
   });
 
   it("every link in the real texts names its site", () => {
@@ -189,9 +187,9 @@ describe("the notices each bundled licence asks for", () => {
     undo.push(said.undo);
     render(<About />);
 
-    await who.click(await screen.findByRole("button", { name: "Avisos de terceros" }));
+    await who.click(await screen.findByRole("button", { name: "第三方声明" }));
 
-    expect(await screen.findByText("No se pudieron leer los avisos de terceros")).toBeDefined();
+    expect(await screen.findByText("无法读取第三方声明")).toBeDefined();
     expect(document.querySelector(".notices")).toBeNull();
   });
 });

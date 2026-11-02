@@ -20,24 +20,24 @@ describe("the window", () => {
 
   it("lands on the shortcuts when the panel asks for settings", async () => {
     render(<App />);
-    await screen.findByLabelText("Idioma");
+    await screen.findByLabelText("界面语言");
 
     const rail = await heardOn("rail");
     rail({ payload: "backup" });
-    expect(await screen.findByText("Exportar")).toBeDefined();
+    expect(await screen.findByText("导出")).toBeDefined();
 
     rail({ payload: "keys" });
-    expect(await screen.findByText("Atajo del panel")).toBeDefined();
+    expect(await screen.findByText("打开面板")).toBeDefined();
   });
 
   it("does not move when asked for a section that does not exist", async () => {
     render(<App />);
-    await screen.findByLabelText("Idioma");
+    await screen.findByLabelText("界面语言");
 
     const rail = await heardOn("rail");
     rail({ payload: "inventada" });
     await waitFor(() => {
-      expect(screen.getByLabelText("Idioma")).toBeDefined();
+      expect(screen.getByLabelText("界面语言")).toBeDefined();
     });
   });
 });

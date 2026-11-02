@@ -8,14 +8,7 @@ const FIELD: Record<Role, "shortcut" | "plain-shortcut"> = {
   plain: "plain-shortcut",
 };
 
-const SYSTEM = [
-  "Ctrl+C",
-  "Ctrl+X",
-  "Ctrl+V",
-  "Ctrl+Insert",
-  "Shift+Insert",
-  "Shift+Delete",
-];
+const SYSTEM = ["Ctrl+C", "Ctrl+X", "Ctrl+V", "Ctrl+Insert", "Shift+Insert", "Shift+Delete"];
 
 export default function Keys({
   kept,

@@ -1,19 +1,19 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
+import { adopt } from "../locales";
 
 const asked = vi.hoisted(() => ({
-  greeting: { kind: "tour", former: true } as unknown,
+  greeting: { kind: "tour" } as unknown,
   bound: true,
-  locale: "es",
-  trust: { offered: false, pastes: false, secureInput: false, clipboard: "allowed" },
+  locale: "zh",
   usedBytes: 0,
   glance: { items: 0, today: 0, pinned: 0, bytes: 0 },
 }));
 
 vi.mock("@tauri-apps/plugin-dialog", () => ({
-  save: vi.fn(() => Promise.resolve("/donde/quiera/CopyPaste.cpbackup")),
-  open: vi.fn(() => Promise.resolve("/donde/quiera/CopyPaste.cpbackup")),
+  save: vi.fn(() => Promise.resolve("/donde/quiera/Klipu.klipubak")),
+  open: vi.fn(() => Promise.resolve("/donde/quiera/Klipu.klipubak")),
 }));
 
 vi.mock("@tauri-apps/api/event", () => ({
@@ -31,9 +31,8 @@ vi.mock("@tauri-apps/api/core", () => ({
       return Promise.resolve({
         locale: asked.locale,
         theme: "system",
-        shortcut: "Ctrl+Alt+V",
-        "plain-shortcut": "Alt+Shift+V",
-        "forms-shortcut": "Ctrl+Alt+P",
+        shortcut: "Ctrl+Alt+K",
+        "plain-shortcut": "Ctrl+Alt+Shift+K",
         "hides-when-left": true,
         "keeps-days": 30,
         "images-quota-mb": 0,
@@ -77,7 +76,7 @@ vi.mock("@tauri-apps/api/core", () => ({
     if (what === "trouble") return Promise.resolve(null);
     if (what === "keys") {
       const role = (args as { role?: string } | undefined)?.role ?? "panel";
-      const wanted = { panel: "Ctrl+Alt+V", plain: "Alt+Shift+V", forms: "Ctrl+Alt+P" }[role];
+      const wanted = { panel: "Ctrl+Alt+K", plain: "Ctrl+Alt+Shift+K" }[role];
       return Promise.resolve({ wanted, bound: role === "panel" ? asked.bound : true });
     }
     if (what === "waking") {
@@ -91,58 +90,16 @@ vi.mock("@tauri-apps/api/core", () => ({
         managed: false,
       });
     }
-    if (what === "former") {
-      return Promise.resolve({
-        path: "C:UsersquienAppDataLocalCopyPasteclipboard.db",
-        bytes: 224395264,
-        items: 1200,
-        pictures: 40,
-        picturesGone: 3,
-        pinned: 12,
-        labelled: 5,
-        withStyles: 260,
-        beyondKeep: 860,
-        came: 0,
-        cameStill: 0,
-        cameAt: null,
-        unreadable: null,
-      });
-    }
-    if (what === "bring_former") {
-      return Promise.resolve({
-        added: 1180,
-        already: 0,
-        refused: 0,
-        withoutTheirPicture: 3,
-        swept: 860,
-        crowded: 0,
-      });
-    }
     if (what === "storage_used") return Promise.resolve(asked.usedBytes);
     if (what === "where_it_lives") return Promise.resolve("C:UsersquienAppDataLocalCopyPaste");
-    if (what === "trust" || what === "ask_trust") {
-      return Promise.resolve({ ...asked.trust });
-    }
-    if (what === "update_ready") {
-      return Promise.resolve({ route: "download", looked: true, ready: null });
-    }
-    if (what === "install_route") {
-      return Promise.resolve("download");
-    }
-    if (what === "update_install") {
-      return Promise.resolve(null);
-    }
     if (what === "save_backup") {
-      return Promise.resolve({ path: "/donde/quiera/CopyPaste.cpbackup", items: 3, bytes: 2048 });
+      return Promise.resolve({ path: "/donde/quiera/Klipu.klipubak", items: 3, bytes: 2048 });
     }
     if (what === "spare") {
-      return Promise.resolve(["Alt+Shift+V", "Ctrl+Alt+Shift+V"]);
+      return Promise.resolve(["Ctrl+Alt+J", "Ctrl+Alt+Shift+V"]);
     }
     if (what === "load_backup") {
       return Promise.resolve({ added: 2, already: 1 });
-    }
-    if (what === "linkunbound_here") {
-      return Promise.resolve(false);
     }
     if (what === "open_web") {
       return Promise.resolve();
@@ -172,10 +129,9 @@ vi.mock("@tauri-apps/api/window", () => ({
 
 afterEach(() => {
   cleanup();
-  asked.greeting = { kind: "tour", former: true };
+  asked.greeting = { kind: "tour" };
   asked.bound = true;
-  asked.locale = "es";
-  asked.trust = { offered: false, pastes: false, secureInput: false, clipboard: "allowed" };
+  asked.locale = "zh";
   asked.usedBytes = 0;
   asked.glance = { items: 0, today: 0, pinned: 0, bytes: 0 };
 });
@@ -184,3 +140,5 @@ export function forPanel(args: unknown) {
   const role = (args as { role?: string } | undefined)?.role;
   return role === undefined || role === "panel";
 }
+
+beforeEach(() => adopt("zh"));

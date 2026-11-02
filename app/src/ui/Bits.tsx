@@ -1,20 +1,9 @@
 import { Children, cloneElement, isValidElement, type ReactNode } from "react";
 import { t } from "../locales";
 
-export function wentWrong(
-  key: "failedLook" | "failedOut" | "failedIn" | "failedCross" | "failedDrop" | "failedEmpty",
-  why: unknown,
-): string {
+export function wentWrong(key: "failedOut" | "failedIn" | "failedEmpty", why: unknown): string {
   console.error(key, why);
   return `${t(key)} · ${t("inTheLog")}`;
-}
-
-export function asProse(parts: string[]): string {
-  return parts
-    .map((one) => one.trim())
-    .filter((one) => one.length > 0)
-    .map((one) => (/[.!?:]$/.test(one) ? one : `${one}.`))
-    .join(" ");
 }
 
 export function Band({ says }: { says: string }) {

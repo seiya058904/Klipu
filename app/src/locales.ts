@@ -136,7 +136,8 @@ const ZH = {
   aboutIs: "简介",
   aboutWhat: "一款精简的 Windows 剪贴板管理器。",
   aboutPrivacy: "历史记录只保存在这台电脑上。无账号、无遥测、不联网。",
-  aboutOrigin: "Klipu 基于 Mario Hidalgo G. (rgdevment) 的开源项目 CoPanda 修改而来，遵循 GPL-3.0。",
+  aboutOrigin:
+    "Klipu 基于 Mario Hidalgo G. (rgdevment) 的开源项目 CoPanda 修改而来，遵循 GPL-3.0。",
   badgeLocal: "完全本地",
   badgeOpen: "开源",
   badgeFree: "免费",

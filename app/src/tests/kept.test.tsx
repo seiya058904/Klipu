@@ -5,9 +5,9 @@ import { type Kept, useKept } from "../core";
 type Heard = (event: { payload: unknown }) => void;
 
 const saved: Kept = {
-  locale: "es",
+  locale: "zh",
   theme: "system",
-  shortcut: "Ctrl+Alt+V",
+  shortcut: "Ctrl+Alt+K",
   "hides-when-left": true,
   "keeps-days": 30,
   "images-quota-mb": 0,

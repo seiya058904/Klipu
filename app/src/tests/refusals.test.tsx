@@ -35,8 +35,8 @@ describe("when the backend says no", () => {
       ),
     );
     render(<App />);
-    await who.click(await screen.findByRole("button", { name: "Apariencia" }));
-    const look = await screen.findByLabelText("Tema");
+    await who.click(await screen.findByRole("button", { name: "外观" }));
+    const look = await screen.findByLabelText("主题");
     const { invoke } = await import("@tauri-apps/api/core");
     const asked = vi.mocked(invoke).mock.calls.filter(([what]) => what === "settings").length;
 
@@ -56,8 +56,8 @@ describe("when the backend says no", () => {
     );
     const who = userEvent.setup();
     render(<App />);
-    await who.click(screen.getByRole("button", { name: "Atajos de teclado" }));
-    expect(await screen.findByText("Atajo del panel")).toBeDefined();
+    await who.click(screen.getByRole("button", { name: "快捷键" }));
+    expect(await screen.findByText("打开面板")).toBeDefined();
     expect(screen.queryByText(/Otro programa ya usa/)).toBeNull();
   });
 
@@ -65,15 +65,15 @@ describe("when the backend says no", () => {
     undo.push(
       await insteadOf((what, _real, args) => {
         if (what === "keys" && forPanel(args)) {
-          return Promise.resolve({ wanted: "Ctrl+Alt+V", bound: false });
+          return Promise.resolve({ wanted: "Ctrl+Alt+K", bound: false });
         }
         return what === "spare" ? Promise.reject(new Error("no answer")) : null;
       }),
     );
     const who = userEvent.setup();
     render(<App />);
-    await who.click(screen.getByRole("button", { name: "Atajos de teclado" }));
-    expect(await screen.findByText(/Otro programa ya usa esa combinación/)).toBeDefined();
+    await who.click(screen.getByRole("button", { name: "快捷键" }));
+    expect(await screen.findByText(/已被其他程序占用/)).toBeDefined();
     expect(screen.queryByText(/Estas están libres/)).toBeNull();
   });
 });

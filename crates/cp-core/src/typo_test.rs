@@ -36,5 +36,5 @@ fn a_word_being_typed_is_compared_with_the_start_of_the_other() {
 #[test]
 fn letters_beyond_the_basic_alphabet_count_as_one() {
     assert_eq!(distance("ñandú", "ñandu", false), Some(1));
-    assert_eq!(distance("日本語です", "日本語でず", false), Some(1));
+    assert_eq!(distance("привет", "привёт", false), Some(1));
 }

@@ -15,6 +15,8 @@ const WEIGHED: &str = "bm25(items_fts, 1.0, 2.0, 0.3, 0.5)";
 
 const GUESSES: usize = 8;
 
+const PHRASE_GAP: &str = "\u{1F}";
+
 pub(crate) fn teach(db: &Connection) -> Result<()> {
     db.create_scalar_function(
         "cp_holds",
@@ -58,7 +60,8 @@ pub(crate) fn encode(terms: &[Term]) -> String {
         .iter()
         .map(|term| {
             let mark = if term.whole { "w" } else { "o" };
-            [mark, term.text.as_str()]
+            let text = term.text.replace(' ', PHRASE_GAP);
+            [mark, text.as_str()]
                 .into_iter()
                 .chain(term.alike.iter().map(String::as_str))
                 .collect::<Vec<_>>()
@@ -73,7 +76,7 @@ fn decode(text: &str) -> Vec<Term> {
         .filter_map(|line| {
             let mut words = line.split(' ');
             let whole = words.next()? == "w";
-            let text = words.next()?.to_owned();
+            let text = words.next()?.replace(PHRASE_GAP, " ");
             Some(Term {
                 text,
                 whole,

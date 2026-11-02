@@ -9,18 +9,18 @@ const THUMB_SIDE: u32 = 256;
 const DAY: i64 = 86_400_000;
 
 const APPS: [&str; 9] = [
-    "Safari",
-    "Mail",
-    "Vivaldi",
+    "Edge",
+    "Outlook",
+    "VS Code",
     "Microsoft Teams",
     "Excel",
     "Word",
-    "Screenshot",
-    "Orca",
+    "截图工具",
+    "微信",
     "Explorer",
 ];
 
-const SENTENCES: [&str; 12] = [
+const SENTENCES: [&str; 16] = [
     "We are confirming Thursday's meeting at 16:30 in the Ventura room.",
     "The agenda is the macOS kernel freeze and the system test suite.",
     "If anyone cannot make it, let us know before Wednesday.",
@@ -28,6 +28,10 @@ const SENTENCES: [&str; 12] = [
     "東京の天気は晴れ、明日は雨の予報です。",
     "مرحبا بالعالم، هذا نص تجريبي للبحث.",
     "Straße, encyclopædia and other words with characters outside ASCII.",
+    "周四的发布定在十点，开会前先过一遍清单，有缺漏告诉我。",
+    "明天下午三点在三楼会议室讨论新版本的发布计划。",
+    "请把上个月的报销单发给财务，发票抬头写公司全称。",
+    "安装 nginx 后记得重启服务器，再检查一下防火墙规则。",
     "🚀 We are launching 3.1 with colour emoji and instant search 🎉",
     "Remember to renew the certificate before October 30.",
     "The blob quota gets swept at 03:00 while the machine is idle.",

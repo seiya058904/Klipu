@@ -17,11 +17,11 @@ describe("the ready card", () => {
   });
 
   it("tells what the history holds", async () => {
-    adopt("es");
+    adopt("zh");
     scene.glance = { items: 12480, today: 37, pinned: 18, bytes: 84 * 1024 ** 2 };
     render(<Ready />);
-    expect(await screen.findByText("CoPanda está listo")).toBeInTheDocument();
-    expect(screen.getByText("12.480")).toBeInTheDocument();
+    expect(await screen.findByText("Klipu 已就绪")).toBeInTheDocument();
+    expect(screen.getByText("12,480")).toBeInTheDocument();
     expect(screen.getByText("37")).toBeInTheDocument();
     expect(screen.getByText("18")).toBeInTheDocument();
     expect(screen.getByText("84 MB")).toBeInTheDocument();
@@ -29,48 +29,48 @@ describe("the ready card", () => {
   });
 
   it("invites to copy something when the history is empty", async () => {
-    adopt("es");
+    adopt("zh");
     render(<Ready />);
-    expect(await screen.findByText(/Todavía no hay nada guardado/)).toBeInTheDocument();
-    expect(screen.queryByText("guardados")).toBeNull();
+    expect(await screen.findByText(/还没有内容/)).toBeInTheDocument();
+    expect(screen.queryByText("已保存")).toBeNull();
   });
 
   it("says nothing about the history when it could not be read", async () => {
-    adopt("es");
+    adopt("zh");
     const invoke = await asked();
     const real = invoke.getMockImplementation() as (what: string, args?: never) => Promise<unknown>;
     invoke.mockImplementation(((what: string, args?: never) =>
       what === "glance" ? Promise.reject(new Error("locked")) : real(what, args)) as never);
     render(<Ready />);
-    expect(await screen.findByText("CoPanda está listo")).toBeInTheDocument();
-    expect(screen.queryByText(/Todavía no hay nada guardado/)).toBeNull();
-    expect(screen.queryByText("guardados")).toBeNull();
+    expect(await screen.findByText("Klipu 已就绪")).toBeInTheDocument();
+    expect(screen.queryByText(/还没有内容/)).toBeNull();
+    expect(screen.queryByText("已保存")).toBeNull();
     invoke.mockImplementation(real as never);
   });
 
   it("counts today from local midnight", async () => {
-    adopt("es");
+    adopt("zh");
     render(<Ready />);
-    await screen.findByText("CoPanda está listo");
+    await screen.findByText("Klipu 已就绪");
     expect(await asked()).toHaveBeenCalledWith("glance", { since: midnight() });
   });
 
   it("opens the history or the settings and goes away", async () => {
-    adopt("es");
+    adopt("zh");
     const who = userEvent.setup();
     render(<Ready />);
-    await who.click(await screen.findByRole("button", { name: "Ver historial" }));
+    await who.click(await screen.findByRole("button", { name: "查看历史" }));
     expect(await asked()).toHaveBeenCalledWith("show_panel");
-    await who.click(screen.getByRole("button", { name: "Ajustes" }));
+    await who.click(screen.getByRole("button", { name: "设置" }));
     expect(await asked()).toHaveBeenCalledWith("open_settings", { rail: "general" });
     expect(theWindow.close).toHaveBeenCalled();
   });
 
   it("leaves on its own, but waits while the mouse is over it", async () => {
-    adopt("es");
+    adopt("zh");
     vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<Ready />);
-    await screen.findByText("CoPanda está listo");
+    await screen.findByText("Klipu 已就绪");
     const card = document.documentElement;
     fireEvent.mouseEnter(card);
     act(() => vi.advanceTimersByTime(LASTS_MS * 2));

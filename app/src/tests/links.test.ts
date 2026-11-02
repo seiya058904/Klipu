@@ -5,8 +5,6 @@ import { LINKS } from "../ui/About";
 type Allowed = { url: string };
 type Permission = string | { identifier: string; allow?: Allowed[] };
 
-const TOOLS = ["https://www.tisty.app/", "https://www.linkunbound.app/"];
-
 function allowed(): string[] {
   const said = readFileSync("src-tauri/capabilities/default.json", "utf8");
   const permissions: Permission[] = JSON.parse(said).permissions;
@@ -30,17 +28,11 @@ function covers(pattern: string, url: string): boolean {
 describe("the links in About", () => {
   it("are all allowed, so none is born dead", () => {
     const patterns = allowed();
-    for (const url of [...LINKS, ...TOOLS]) {
+    for (const url of LINKS) {
       expect(
         patterns.some((one) => covers(one, url)),
         `${url} no lo permite ningún patrón`,
       ).toBe(true);
-    }
-  });
-
-  it("the other tools lead to their own page, not to the repository", () => {
-    for (const url of TOOLS) {
-      expect(url.startsWith("https://github.com/")).toBe(false);
     }
   });
 });

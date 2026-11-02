@@ -49,13 +49,7 @@ export default function Welcome() {
   );
 }
 
-function Tour({
-  kept,
-  change,
-}: {
-  kept: Kept;
-  change: (what: Partial<Kept>) => Promise<void>;
-}) {
+function Tour({ kept, change }: { kept: Kept; change: (what: Partial<Kept>) => Promise<void> }) {
   const [at, setAt] = useState(0);
 
   const step: Step = STEPS[at];
@@ -86,11 +80,7 @@ function Tour({
       return <TryIt kept={kept} change={change} dots={dots} next={next} />;
     case "where":
       return (
-        <Screen
-          dots={dots}
-          left={null}
-          right={<Strong says={t("welcomeDone")} onPress={next} />}
-        >
+        <Screen dots={dots} left={null} right={<Strong says={t("welcomeDone")} onPress={next} />}>
           <Heading
             over={t("welcomeWhereOver")}
             title={t("welcomeWhereTitle")}

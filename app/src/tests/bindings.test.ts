@@ -9,13 +9,9 @@ function ui(name: string) {
 
 const PANEL = ui("panel.slint");
 
-// the sheet answers first and bails out with a reject, so the table's keys are read after it
-const AFTER_THE_SHEET = PANEL.slice(PANEL.indexOf("return reject;"));
+const KEYS_READ = PANEL.slice(PANEL.indexOf("key-pressed(event)"));
 
-// past that point every binding closes its branch with one, so each piece is a single condition
-const BRANCHES = AFTER_THE_SHEET.split("return accept;").slice(0, -1);
-
-const APPLE = "Theme.apple";
+const BRANCHES = KEYS_READ.split("return accept;").slice(0, -1);
 
 // what the branch asks for before it runs, which is where a modifier is required rather than read
 function conditionOf(branch: string) {
@@ -25,27 +21,20 @@ function conditionOf(branch: string) {
   return opens === -1 ? said : said.slice(0, opens);
 }
 
-// a condition that refuses a chord reads the same as one that answers it, so drop what it negates,
-// and on Windows drop the alternatives that only a Mac ever reaches
-function liveOn(said: string, mac: boolean) {
-  const kept = said.replaceAll(/![(][^)]*[)]/g, "");
-  return mac ? kept : kept.replaceAll(/[(]Theme[.]apple[^)]*[)]/g, "");
-}
-
 // a key promised alone has to be read alone: a branch that demands a modifier alongside it
 // answers a different chord, which is how Enter kept its promise from the «paste as» branch
-function readsItAlone(branch: string, key: string, mac: boolean) {
-  return liveOn(conditionOf(branch), mac)
+function readsItAlone(branch: string, key: string) {
+  return conditionOf(branch)
     .split("||")
     .filter((one) => one.includes(key))
     .some((one) => !one.includes("modifiers."));
 }
 
-function answers(branch: string, needs: string[], mac: boolean) {
-  if (!needs.every((one) => liveOn(branch, mac).includes(one))) {
+function answers(branch: string, needs: string[]) {
+  if (!needs.every((one) => branch.includes(one))) {
     return false;
   }
-  return needs.length > 1 || readsItAlone(branch, needs[0], mac);
+  return needs.length > 1 || readsItAlone(branch, needs[0]);
 }
 
 const LOOKED_FOR: Record<string, string> = {
@@ -66,9 +55,7 @@ const LOOKED_FOR: Record<string, string> = {
   "→": "event.text == Key.RightArrow",
 };
 
-const CLICKS = new Set(["clic", "click", "doble clic", "double click"]);
-
-const MODES = new Set(["uno", "varios", "one", "many"]);
+const CLICKS = new Set(["单击", "click", "双击", "double click"]);
 
 const MODIFIER: Record<string, string> = {
   ctrl: "modifiers.control",
@@ -94,6 +81,9 @@ const DESCRIBED = new Set([
   "doble clic",
   "double click",
   "space",
+  "方向键",
+  "单击",
+  "双击",
 ]);
 
 // a Mac combination carries no separator: ⌘⌫ is the Command key and the one it holds
@@ -150,93 +140,40 @@ function asked(combination: string): string[] | null {
   ];
 }
 
-function rowsOn(mac: boolean): Binding[] {
-  return ["es", "en"].flatMap((tongue) => {
+function rows(): Binding[] {
+  return ["zh", "en"].flatMap((tongue) => {
     adopt(tongue);
-    return panelKeys(mac);
+    return panelKeys();
   });
 }
 
 describe("the shortcut table", () => {
-  it("promises only keys the panel really watches, on Windows and on a Mac", () => {
-    for (const mac of [false, true]) {
-      const where = mac ? "macOS" : "Windows";
-      for (const row of rowsOn(mac)) {
-        for (const combination of row.keys.split("·")) {
-          const needs = asked(combination);
-          if (!needs) {
-            continue;
-          }
-          const found = BRANCHES.some((branch) => answers(branch, needs, mac));
-          expect(
-            found,
-            `on ${where} «${row.keys}» promises ${needs.join(" + ")} and no branch reads it`,
-          ).toBe(true);
+  it("promises only keys the panel really watches", () => {
+    for (const row of rows()) {
+      for (const combination of row.keys.split("·")) {
+        const needs = asked(combination);
+        if (!needs) {
+          continue;
         }
-      }
-    }
-  });
-
-  it("says out loud what a Mac only draws", () => {
-    for (const tongue of ["es", "en"] as const) {
-      adopt(tongue);
-      for (const row of panelKeys(true)) {
-        expect(row.said.length, `${tongue} «${row.keys}»`).toBeGreaterThan(0);
-        for (const one of [...row.keys]) {
-          expect(
-            row.said.includes(one) || /[\p{L}\p{N}]/u.test(one) === false || one === " ",
-            `«${row.keys}» leaves ${one} unsaid`,
-          ).toBe(true);
-        }
-      }
-    }
-    adopt("es");
-    const [remove] = panelKeys(true).filter((one) => one.id === "remove");
-    expect(remove.said).toBe("Comando Retroceso");
-    adopt("en");
-    expect(panelKeys(true).filter((one) => one.id === "remove")[0].said).toBe("Command Backspace");
-  });
-
-  it("does not offer a Mac keys its keyboard lacks", () => {
-    const forbidden = [/\bF\d/, /\bSupr\b/, /\bDelete\b/, /\bCtrl\b/, /\bAlt\b/, /\bShift\b/];
-    for (const row of rowsOn(true)) {
-      for (const one of forbidden) {
-        expect(one.test(row.keys), `«${row.keys}» is not how a Mac keyboard is written`).toBe(
-          false,
+        const found = BRANCHES.some((branch) => answers(branch, needs));
+        expect(found, `«${row.keys}» promises ${needs.join(" + ")} and no branch reads it`).toBe(
+          true,
         );
       }
     }
   });
 
-  it("what only answers on a Mac sits behind the platform", () => {
-    const only = ['event.text == ","', "event.text == Key.Backspace && event.modifiers.control"];
-    for (const one of only) {
-      const branch = BRANCHES.find((said) => said.includes(one));
-      expect(branch, `nothing in the panel reads ${one}`).toBeTruthy();
-      expect(branch, `${one} answers on Windows too`).toContain(APPLE);
-    }
-    expect(
-      BRANCHES.find((one) => one.includes("root.remove(")),
-      "a bare forward delete still destroys a card on a Mac, and no table offers it",
-    ).toContain("!Theme.apple && event.text == Key.Delete");
-    expect(PANEL, "the kinds sheet ignores Command on a Mac").toContain(
-      "(event.modifiers.alt || (Theme.apple && event.modifiers.control))",
-    );
-  });
-
   it("says the same in both languages, row by row", () => {
-    for (const mac of [false, true]) {
-      adopt("es");
-      const es = panelKeys(mac);
-      adopt("en");
-      const en = panelKeys(mac);
-      expect(es.length).toBe(en.length);
-      expect(es.length).toBeGreaterThan(0);
-      for (let at = 0; at < es.length; at += 1) {
-        expect(es[at].keys.length).toBeGreaterThan(0);
-        expect(en[at].keys.length).toBeGreaterThan(0);
-        expect(es[at].does).not.toBe(en[at].does);
-      }
+    adopt("zh");
+    const es = panelKeys();
+    adopt("en");
+    const en = panelKeys();
+    expect(es.length).toBe(en.length);
+    expect(es.length).toBeGreaterThan(0);
+    for (let at = 0; at < es.length; at += 1) {
+      expect(es[at].keys.length).toBeGreaterThan(0);
+      expect(en[at].keys.length).toBeGreaterThan(0);
+      expect(es[at].does).not.toBe(en[at].does);
     }
   });
 
@@ -246,7 +183,7 @@ describe("the shortcut table", () => {
     expect(cards, "no clic suma tipos en vez de cambiarlos").toContain(
       "self.adding = event.modifiers.control",
     );
-    for (const row of rowsOn(true)) {
+    for (const row of rows()) {
       for (const combination of row.keys.split("·")) {
         const parts = pieces(combination).map((one) => one.toLowerCase());
         const last = parts.at(-1);
@@ -261,36 +198,6 @@ describe("the shortcut table", () => {
             `«${row.keys}» promises ${looked} and nothing that is clicked reads it`,
           ).toContain(looked);
         }
-      }
-    }
-  });
-
-  it("the button that promises to add kinds exists in the panel", () => {
-    for (const tongue of ["es", "en"] as const) {
-      adopt(tongue);
-      const row = panelKeys(false).find((one) =>
-        one.keys.split("·").some((word) => MODES.has(word.trim().toLowerCase())),
-      );
-      expect(row, `${tongue} never says how to filter by more than one kind`).toBeTruthy();
-    }
-    expect(PANEL, "nothing in the panel toggles the mode").toContain("keep-toggled");
-  });
-
-  it("filters by kinds the search box knows", () => {
-    const view = readFileSync(
-      join(__dirname, "..", "..", "..", "crates", "cp-panel", "src", "view.rs"),
-      "utf8",
-    );
-    adopt("es");
-    for (const row of panelKeys(false)) {
-      for (const word of row.keys.split("·")) {
-        const tag = word.trim();
-        if (!tag.startsWith("#")) {
-          continue;
-        }
-        expect(view, `«${tag}» is not a kind the search box knows`).toContain(
-          `"${tag.slice(1)}" =>`,
-        );
       }
     }
   });

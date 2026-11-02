@@ -55,8 +55,7 @@ describe("two combinations", () => {
     expect(sameKeys("", "")).toBe(false);
     expect(sameKeys("Ctrl+Alt+KeyV", "Ctrl+Alt+V")).toBe(true);
     expect(sameKeys("Ctrl+Digit1", "Ctrl+1")).toBe(true);
-    expect(sameKeys("CommandOrControl+Alt+V", "Ctrl+Alt+V", false)).toBe(true);
-    expect(sameKeys("CmdOrCtrl+Alt+V", "Cmd+Alt+V", true)).toBe(true);
-    expect(sameKeys("CmdOrCtrl+Alt+V", "Cmd+Alt+V", false)).toBe(false);
+    expect(sameKeys("CommandOrControl+Alt+V", "Ctrl+Alt+V")).toBe(true);
+    expect(sameKeys("CmdOrCtrl+Alt+V", "Cmd+Alt+V")).toBe(false);
   });
 });

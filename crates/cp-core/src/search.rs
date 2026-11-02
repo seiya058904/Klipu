@@ -21,10 +21,27 @@ pub(crate) fn fold_mapped(input: &str) -> Folded {
     Folded { chars, origin }
 }
 
+pub fn is_cjk(c: char) -> bool {
+    matches!(
+        c as u32,
+        0x3040..=0x30FF
+            | 0x3400..=0x4DBF
+            | 0x4E00..=0x9FFF
+            | 0xF900..=0xFAFF
+            | 0x20000..=0x323AF
+    )
+}
+
 fn fold_each(input: &str, mut push: impl FnMut(char, usize)) {
     for (at, c) in input.char_indices() {
         if c.is_ascii() {
             push(c.to_ascii_lowercase(), at);
+            continue;
+        }
+        if is_cjk(c) {
+            push(' ', at);
+            push(c, at);
+            push(' ', at);
             continue;
         }
         for decomposed in std::iter::once(c).nfkd() {
@@ -47,20 +64,39 @@ pub struct Term {
 }
 
 pub fn terms_of(query: &str) -> Vec<Term> {
-    let folded = fold(query);
-    let typing = !folded.ends_with(char::is_whitespace);
-    let words: Vec<&str> = folded.split_whitespace().collect();
+    let typing = !query.ends_with(char::is_whitespace);
+    let words: Vec<String> = query
+        .split_whitespace()
+        .flat_map(|typed| phrases_of(&fold(typed)))
+        .collect();
     let last = words.len().saturating_sub(1);
     words
         .into_iter()
         .enumerate()
         .filter(|(_, word)| word.chars().any(char::is_alphanumeric))
         .map(|(at, word)| Term {
-            text: word.to_owned(),
+            text: word,
             whole: at < last || !typing,
             alike: Vec::new(),
         })
         .collect()
+}
+
+fn phrases_of(folded: &str) -> Vec<String> {
+    let mut phrases: Vec<String> = Vec::new();
+    let mut in_phrase = false;
+    for word in folded.split_whitespace() {
+        let single = word.chars().count() == 1 && word.chars().all(is_cjk);
+        match phrases.last_mut() {
+            Some(phrase) if single && in_phrase => {
+                phrase.push(' ');
+                phrase.push_str(word);
+            }
+            _ => phrases.push(word.to_owned()),
+        }
+        in_phrase = single;
+    }
+    phrases
 }
 
 pub fn holds(text: &str, terms: &[Term]) -> bool {
@@ -198,7 +234,7 @@ fn spots_of(chars: &[char], tokens: &[(usize, usize)], term: &Term) -> Vec<(usiz
     std::iter::once(&term.text)
         .chain(&term.alike)
         .flat_map(|word| {
-            if term.whole {
+            if term.whole && !word.chars().any(is_cjk) {
                 alone_of(chars, word)
             } else {
                 matches_of(chars, tokens, word)

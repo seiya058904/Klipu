@@ -1621,3 +1621,46 @@ fn paging_by_relevance_neither_repeats_nor_skips() {
     assert_eq!(walked, whole);
     assert_eq!(walked.len(), 25);
 }
+
+fn found_for_cjk(store: &Store, query: &str) -> usize {
+    store
+        .list(
+            &Filter {
+                query: Some(query.to_owned()),
+                ..Filter::default()
+            },
+            50,
+            None,
+        )
+        .expect("listed")
+        .rows
+        .len()
+}
+
+#[test]
+fn chinese_is_found_from_any_part_of_a_sentence() {
+    let store = Store::in_memory().expect("schema");
+    store
+        .insert_text("a", "明天下午三点开会讨论发布计划", 1)
+        .expect("insert");
+    store
+        .insert_text("b", "安装nginx后重启服务器", 2)
+        .expect("insert");
+    assert_eq!(found_for_cjk(&store, "明天"), 1, "the start of a sentence");
+    assert_eq!(found_for_cjk(&store, "开会"), 1, "the middle of a sentence");
+    assert_eq!(
+        found_for_cjk(&store, "发布计划"),
+        1,
+        "the end of a sentence"
+    );
+    assert_eq!(found_for_cjk(&store, "开会 计划"), 1, "two parts of it");
+    assert_eq!(found_for_cjk(&store, "开会 "), 1, "a finished word");
+    assert_eq!(found_for_cjk(&store, "nginx"), 1, "latin inside chinese");
+    assert_eq!(found_for_cjk(&store, "服务"), 1, "chinese after latin");
+    assert_eq!(
+        found_for_cjk(&store, "计发"),
+        0,
+        "characters must be adjacent"
+    );
+    assert_eq!(found_for_cjk(&store, "不存在"), 0);
+}

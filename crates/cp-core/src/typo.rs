@@ -1,4 +1,7 @@
 pub fn tolerance(typed: &str) -> usize {
+    if typed.chars().any(crate::search::is_cjk) {
+        return 0;
+    }
     match typed.chars().count() {
         0..=3 => 0,
         4..=7 => 1,
