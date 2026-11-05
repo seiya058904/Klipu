@@ -45,9 +45,16 @@ pub fn capture_now() -> Captured {
 }
 
 fn capture_counted(counted: &clipboard::Reading) -> Captured {
-    let captured = match Clipboard::within(counted) {
-        Some(clipboard) => capture(&clipboard),
-        None => Captured::Busy,
+    capture_counted_then(counted, || {})
+}
+
+fn capture_counted_then(counted: &clipboard::Reading, after_the_lock: impl FnOnce()) -> Captured {
+    let (captured, generation) = match Clipboard::within(counted) {
+        Some(clipboard) => {
+            let captured = capture(&clipboard);
+            (captured, clipboard.generation())
+        }
+        None => (Captured::Busy, None),
     };
     let Captured::Kept(item) = captured else {
         return captured;
@@ -55,9 +62,22 @@ fn capture_counted(counted: &clipboard::Reading) -> Captured {
     if !awaits_virtual_contents(&item) {
         return Captured::Kept(item);
     }
-    let started = sequence_now();
-    let item = with_virtual_contents(item);
-    if sequence_now() != started {
+    after_the_lock();
+    of_one_generation(item, generation, clipboard::sequence, with_virtual_contents)
+}
+
+fn of_one_generation(
+    item: Item,
+    held: Option<i64>,
+    now: impl Fn() -> Option<i64>,
+    read_contents: impl FnOnce(Item) -> Item,
+) -> Captured {
+    let unchanged = || held.is_some() && now() == held;
+    if !unchanged() {
+        return Captured::Superseded;
+    }
+    let item = read_contents(item);
+    if !unchanged() {
         return Captured::Superseded;
     }
     Captured::Kept(item)
@@ -211,24 +231,39 @@ fn awaits_virtual_contents(item: &Item) -> bool {
     })
 }
 
-fn with_virtual_contents(mut item: Item) -> Item {
-    let Some(count) = bytes_of(&item.formats, DESCRIPTOR)
-        .map(|descriptor| virtual_files::described_in(descriptor).len())
+fn with_virtual_contents(item: Item) -> Item {
+    let Some(described) = bytes_of(&item.formats, DESCRIPTOR).map(virtual_files::described_in)
     else {
         return item;
     };
     let Some(contents_id) = cp_win_sys::formats::id_of(CONTENTS) else {
         return item;
     };
-    let delivered = cp_win_sys::ole::indexed_contents(contents_id, count, BLOB_UP_TO);
+    let delivered = cp_win_sys::ole::indexed_contents(contents_id, described.len(), BLOB_UP_TO);
+    filled_with(item, &described, &delivered)
+}
+
+fn filled_with(
+    mut item: Item,
+    described: &[virtual_files::Described],
+    delivered: &[Option<Vec<u8>>],
+) -> Item {
     for format in &mut item.formats {
         if !matches!(format.payload, Payload::Absent) {
             continue;
         }
-        if let Some(bytes) = virtual_files::index_of(&format.id)
-            .and_then(|index| delivered.get(index))
-            .and_then(Clone::clone)
-        {
+        let Some(index) = virtual_files::index_of(&format.id) else {
+            continue;
+        };
+        let Some(bytes) = delivered.get(index).and_then(Clone::clone) else {
+            continue;
+        };
+        let promised_more = bytes.is_empty()
+            && described
+                .get(index)
+                .and_then(|one| one.size)
+                .is_some_and(|size| size > 0);
+        if !promised_more {
             format.payload = Payload::stored(bytes);
         }
     }

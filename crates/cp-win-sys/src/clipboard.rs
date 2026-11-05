@@ -206,6 +206,10 @@ impl<'a> Clipboard<'a> {
         found
     }
 
+    pub fn generation(&self) -> Option<i64> {
+        sequence()
+    }
+
     pub fn owner(&self) -> Option<HWND> {
         let owner = unsafe { GetClipboardOwner() }.ok()?;
         (!owner.is_invalid()).then_some(owner)
