@@ -1,6 +1,19 @@
 use super::*;
 use slint::platform::{Key, WindowEvent};
 
+const KEPT: crate::kept::Kept = crate::kept::Kept {
+    english: false,
+    theme: cp_config::Theme::Dark,
+    hides: true,
+    look: crate::kept::Look {
+        size: cp_config::TextSize::Normal,
+        density: cp_config::Density::Normal,
+        accent: cp_config::Accent::Indigo,
+        font: "Segoe UI",
+        mono: "Consolas",
+    },
+};
+
 thread_local! {
     static PLATFORM: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
@@ -29,7 +42,7 @@ fn bench(count: usize) -> Bench {
             .insert_text(&format!("clip-{index}"), &text, index as i64 + 1)
             .expect("a clip");
     }
-    let (panel, app) = App::start(
+    let (panel, app) = App::start_with_kept(
         store,
         Options {
             db,
@@ -38,6 +51,7 @@ fn bench(count: usize) -> Bench {
             signals: None,
             backdrop: "none".into(),
         },
+        KEPT,
     )
     .expect("the test panel");
     panel
@@ -52,6 +66,20 @@ fn bench(count: usize) -> Bench {
         app,
         _dir: dir,
     }
+}
+
+#[test]
+fn the_panel_uses_the_injected_settings_without_adopting_host_preferences() {
+    let bench = bench(3);
+    let state = bench.app.state.borrow();
+    assert_eq!(state.kept.get(), KEPT);
+    assert_eq!(state.metrics.shut_lines, KEPT.look.density.shut_lines());
+    assert!(!bench.panel.global::<crate::Theme>().get_light());
+    assert_eq!(
+        bench.panel.global::<crate::Theme>().get_zoom(),
+        KEPT.look.size.zoom()
+    );
+    assert!(!crate::say::in_english());
 }
 
 fn rows(bench: &Bench) -> Rc<Rows> {

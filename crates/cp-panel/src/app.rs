@@ -79,8 +79,15 @@ impl Search {
 
 impl App {
     pub fn start(store: Store, options: Options) -> Result<(Panel, Self), slint::PlatformError> {
+        Self::start_with_kept(store, options, crate::kept::read())
+    }
+
+    fn start_with_kept(
+        store: Store,
+        options: Options,
+        kept: crate::kept::Kept,
+    ) -> Result<(Panel, Self), slint::PlatformError> {
         let panel = Panel::new()?;
-        let kept = crate::kept::read();
         crate::say::adopt_english(kept.english);
         crate::view::dress_words(&panel);
         let theme = panel.global::<crate::Theme>();
