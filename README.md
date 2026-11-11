@@ -91,10 +91,10 @@ Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>K</kbd> wherever you're working. K
 
 **[Get the latest release →](https://github.com/seiya058904/Klipu/releases/latest)**
 
-| Current release · v1.0.0 | Download |
+| Current release · v1.0.1 | Download |
 | :-- | :-- |
-| **Windows x64 installer** | [Klipu_1.0.0_x64-setup.exe](https://github.com/seiya058904/Klipu/releases/download/v1.0.0/Klipu_1.0.0_x64-setup.exe) |
-| **File integrity** | [SHA256SUMS](https://github.com/seiya058904/Klipu/releases/download/v1.0.0/SHA256SUMS) |
+| **Windows x64 installer** | [Klipu_1.0.1_x64-setup.exe](https://github.com/seiya058904/Klipu/releases/download/v1.0.1/Klipu_1.0.1_x64-setup.exe) |
+| **File integrity** | [SHA256SUMS](https://github.com/seiya058904/Klipu/releases/download/v1.0.1/SHA256SUMS) |
 
 1. Download and run the installer. It installs for your Windows user account **without administrator rights**.
 2. Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>K</kbd> to open Klipu.
@@ -108,7 +108,7 @@ Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>K</kbd> wherever you're working. K
 Klipu's installer is **not code-signed**, so Windows SmartScreen may show a warning. Download it from the official release, compare its SHA-256 hash against the included `SHA256SUMS`, and proceed only if you trust the file. If verified and you choose to run it, Windows may offer **More info → Run anyway**.
 
 ~~~powershell
-Get-FileHash .\Klipu_1.0.0_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Klipu_1.0.1_x64-setup.exe -Algorithm SHA256
 ~~~
 
 </details>
