@@ -7,6 +7,49 @@ use rusqlite::{OptionalExtension, params, params_from_iter};
 pub type MetaByItem = std::collections::HashMap<i64, std::collections::HashMap<String, String>>;
 
 impl Store {
+    pub fn catch_up_jpeg(&self) -> Result<usize> {
+        let mut stmt = self.raw().prepare(
+            "SELECT i.id, i.thumb_path IS NULL, COALESCE(i.ocr_text, i.search_ocr, '') = ''
+             FROM items i
+             WHERE i.deleted_at IS NULL AND i.kind = 'image'
+               AND EXISTS (
+                   SELECT 1 FROM item_formats f WHERE f.item_id = i.id
+                     AND f.format IN ('JFIF', 'image/jpeg')
+                     AND (f.inline_data IS NOT NULL OR f.digest IS NOT NULL)
+               )
+               AND NOT EXISTS (
+                   SELECT 1 FROM item_formats f WHERE f.item_id = i.id
+                     AND f.format IN ('PNG', 'image/png')
+                     AND (f.inline_data IS NOT NULL OR f.digest IS NOT NULL)
+               )
+               AND NOT EXISTS (
+                   SELECT 1 FROM item_meta m
+                   WHERE m.item_id = i.id AND m.key = 'jpeg-enrichment-v1'
+               )",
+        )?;
+        let waiting = stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, bool>(1)?,
+                    row.get::<_, bool>(2)?,
+                ))
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        self.all_or_nothing(|| {
+            for (id, thumb, ocr) in &waiting {
+                if *thumb {
+                    self.enqueue(*id, "thumb")?;
+                }
+                if *ocr {
+                    self.enqueue(*id, "ocr")?;
+                }
+                self.set_meta(*id, "jpeg-enrichment-v1", "1")?;
+            }
+            Ok(waiting.len())
+        })
+    }
+
     pub fn set_group(&self, id: i64, key: &str) -> Result<()> {
         self.raw().execute(
             "UPDATE items SET group_key = ?2 WHERE id = ?1",

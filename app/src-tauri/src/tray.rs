@@ -33,28 +33,32 @@ fn worded(chinese: bool) -> [&'static str; 4] {
 const BAR: &[u8] = include_bytes!("../icons/tray/windows-32.png");
 
 fn leave<R: Runtime>(app: &AppHandle<R>) {
-    if app
-        .try_state::<crate::backup::Crossing>()
-        .is_some_and(|crossing| crossing.underway())
-    {
+    let Some(alone) = stopping(app) else {
         surface(app);
         return;
-    }
+    };
+    app.manage(alone);
     app.exit(0);
 }
 
 fn revive<R: Runtime>(app: &AppHandle<R>) {
-    if app
-        .try_state::<crate::backup::Crossing>()
-        .is_some_and(|crossing| crossing.underway())
-    {
+    let Some(_alone) = stopping(app) else {
         surface(app);
         return;
-    }
+    };
     crate::panel::quit(app);
     if let Err(why) = crate::panel::relight(app) {
         crate::note::note(&format!("the panel would not come back: {why}"));
     }
+}
+
+fn stopping<R: Runtime>(app: &AppHandle<R>) -> Option<crate::backup::Alone> {
+    app.try_state::<crate::backup::Crossing>()?
+        .claim()
+        .or_else(|| {
+            app.try_state::<crate::emptying::Pending>()?
+                .interrupt_timed_out()
+        })
 }
 
 pub fn raise<R: Runtime>(app: &AppHandle<R>, chinese: bool) -> Option<()> {

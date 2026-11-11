@@ -207,6 +207,49 @@ fn a_picture_ends_up_with_a_thumbnail_it_can_show() {
 }
 
 #[test]
+fn jpeg_history_catches_up_to_a_thumbnail_and_one_ocr_attempt() {
+    let (dir, store) = somewhere();
+    let pixels = image::RgbImage::from_pixel(16, 8, image::Rgb([180, 50, 20]));
+    let mut out = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(pixels)
+        .write_to(&mut out, image::ImageFormat::Jpeg)
+        .expect("encoded");
+    for (at, format) in [(1, "JFIF"), (2, cp_core::item::SYNTHETIC_JPEG)] {
+        let item = Item {
+            kind: Some(Kind::Image),
+            formats: vec![Format {
+                id: format.into(),
+                payload: Payload::Inline(out.get_ref().clone()),
+            }],
+        };
+        let id = store
+            .insert_item(&format!("jpeg-{at}"), &item, "", at)
+            .expect("old history");
+        catch_up(&store);
+        assert!(waiting(&store, "ocr").contains(&id));
+        assert!(thumbed(
+            &store,
+            id,
+            100,
+            &dir.path().join("thumbs"),
+            &unseen
+        ));
+        let path = store.thumb_path(id).expect("read").expect("a thumbnail");
+        let bytes = std::fs::read(path).expect("thumbnail exists");
+        assert_eq!(
+            cp_core::thumbnail::size_of(&bytes),
+            Some(cp_core::thumbnail::Size {
+                width: 16,
+                height: 8
+            })
+        );
+        store.work_done(id, "ocr").expect("OCR found no text");
+        catch_up(&store);
+        assert!(!waiting(&store, "ocr").contains(&id));
+    }
+}
+
+#[test]
 fn what_the_settings_say_becomes_what_the_store_sweeps() {
     let kept = cp_config::Config {
         keeps_days: Some(30),

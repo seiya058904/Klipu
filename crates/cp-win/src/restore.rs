@@ -69,7 +69,7 @@ impl Ready {
         }
         for id in [UNWATCHED, WORN].iter().filter_map(|name| id_of(name)) {
             self.owned.retain(|(kept, _)| *kept != id);
-            self.owned.push((id, Vec::new()));
+            self.owned.push((id, vec![0]));
         }
     }
 
@@ -78,8 +78,9 @@ impl Ready {
     }
 }
 
-const PICTURE_TWINS: [&str; 6] = [
+const PICTURE_TWINS: [&str; 7] = [
     SYNTHETIC_IMAGE,
+    SYNTHETIC_JPEG,
     PNG,
     JFIF,
     "CF_DIBV5",

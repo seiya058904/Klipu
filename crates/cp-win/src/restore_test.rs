@@ -341,6 +341,17 @@ fn a_write_kept_out_of_the_history_says_so_once_per_door() {
         ready.offers(unwatched),
         "other clipboard managers look away too"
     );
+    for marker in [worn, unwatched] {
+        let (_, bytes) = ready
+            .owned
+            .iter()
+            .find(|(id, _)| *id == marker)
+            .expect("the presence marker is offered");
+        assert!(
+            !bytes.is_empty(),
+            "a zero-length movable block cannot be locked for the native clipboard write"
+        );
+    }
     for name in UNRECORDED {
         let id = id_of(name).expect("a format the system registers");
         assert!(
@@ -351,6 +362,26 @@ fn a_write_kept_out_of_the_history_says_so_once_per_door() {
         );
     }
     assert!(ready.offers(CF_DIB), "the picture itself stays");
+}
+
+#[test]
+fn preparing_an_existing_file_preserves_its_recorded_move_effect() {
+    let effect = id_of(DROP_EFFECT).expect("the drop effect format");
+    let paths = [r"C:\Klipu-test-only\source.txt"];
+    let item = Item {
+        kind: Some(cp_core::kind::Kind::File),
+        formats: vec![
+            inline("CF_HDROP", &drop_of(&paths)),
+            inline(DROP_EFFECT, &2u32.to_le_bytes()),
+        ],
+    };
+    let ready = ready_for(&item);
+    assert!(ready.owned.contains(&(CF_HDROP, drop_of(&paths))));
+    assert!(ready.owned.contains(&(effect, 2u32.to_le_bytes().to_vec())));
+    assert_eq!(
+        crate::transfer::transfer(&2u32.to_le_bytes()),
+        crate::transfer::Transfer::Move
+    );
 }
 
 fn announced(id: &str) -> Format {
@@ -372,6 +403,22 @@ fn a_plain_screenshot_goes_back_exactly_as_it_came() {
         ],
     };
     assert!(rebuilt_whole(&screenshot));
+}
+
+#[test]
+fn both_jpeg_names_can_be_rebuilt_without_losing_their_picture() {
+    let jpeg = jpeg_bytes();
+    for id in [JFIF, SYNTHETIC_JPEG] {
+        let item = Item {
+            kind: Some(cp_core::kind::Kind::Image),
+            formats: vec![inline(id, &jpeg), announced("CF_DIB")],
+        };
+        assert!(rebuilt_whole(&item));
+        let ready = ready_for(&item);
+        assert!(ready.offers(CF_DIB));
+        let jfif = id_of(JFIF).expect("the image format");
+        assert!(ready.owned.contains(&(jfif, jpeg.clone())));
+    }
 }
 
 #[test]

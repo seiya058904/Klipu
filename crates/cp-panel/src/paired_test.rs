@@ -97,12 +97,12 @@ fn the_view_can_recognise_the_grid_it_was_given() {
 }
 
 #[test]
-fn the_grid_listens_to_the_same_tracker_as_the_list() {
+fn the_grid_listens_to_notifications_counted_in_grid_lines() {
     let (rows, grid) = grid_over(4);
     let one = std::ptr::from_ref(grid.model_tracker()).cast::<()>();
-    let other = std::ptr::from_ref(rows.model_tracker()).cast::<()>();
+    let other = std::ptr::from_ref(rows.grid_tracker()).cast::<()>();
     assert!(
         std::ptr::eq(one, other),
-        "a grid with its own tracker would never hear a new page"
+        "the grid must receive row changes in pairs rather than raw card indices"
     );
 }

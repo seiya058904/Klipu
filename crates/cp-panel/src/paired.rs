@@ -40,7 +40,7 @@ impl Model for Paired {
     }
 
     fn model_tracker(&self) -> &dyn ModelTracker {
-        self.rows.model_tracker()
+        self.rows.grid_tracker()
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

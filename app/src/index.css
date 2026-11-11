@@ -1639,3 +1639,11 @@ button:disabled {
     width: 0;
   }
 }
+
+.backup-review .does {
+  flex-wrap: wrap;
+}
+
+.backup-review .path {
+  overflow-wrap: anywhere;
+}

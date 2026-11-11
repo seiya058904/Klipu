@@ -73,8 +73,15 @@ pub fn listen(
                         panel.invoke_plain_asked();
                     });
                 }
-                "empty" => {
-                    let _ = ui.upgrade_in_event_loop(|panel| panel.invoke_emptied());
+                what if empty_ticket(what).is_some() => {
+                    let ticket = empty_ticket(what).unwrap_or_default();
+                    let reply = ticket.clone();
+                    if ui
+                        .upgrade_in_event_loop(move |panel| panel.invoke_emptied(ticket.into()))
+                        .is_err()
+                    {
+                        crate::note::tell(&format!("empty-failed {reply}"));
+                    }
                 }
                 "hide" => {
                     ahead.store(0, Ordering::Relaxed);
@@ -91,6 +98,14 @@ pub fn listen(
             let _ = slint::quit_event_loop();
         });
     });
+}
+
+fn empty_ticket(what: &str) -> Option<String> {
+    what.strip_prefix("empty ")?
+        .trim()
+        .parse::<u64>()
+        .ok()
+        .map(|ticket| ticket.to_string())
 }
 
 pub fn watch_signals(ui: slint::Weak<Panel>, dir: std::path::PathBuf, shelf: crate::kept::Shelf) {
@@ -121,3 +136,7 @@ pub fn watch_signals(ui: slint::Weak<Panel>, dir: std::path::PathBuf, shelf: cra
         }
     });
 }
+
+#[cfg(test)]
+#[path = "orders_test.rs"]
+mod tests;

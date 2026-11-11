@@ -614,3 +614,62 @@ fn an_open_card_that_is_renewed_keeps_its_open_height() {
     assert!(rows.renew(id));
     assert_eq!(rows.span_of(at), Some(opened));
 }
+
+#[test]
+fn replacing_loaded_rows_keeps_the_new_order_metadata_and_remaining_pages() {
+    let store = store_with(300);
+    let rows = open(store.clone(), 1_000);
+    rows.row_data(0).expect("a cached card");
+    store
+        .insert_text("new", "newest", 10_000)
+        .expect("a new clip");
+    store.mark_deleted(299, 10_001).expect("removed");
+    store.reactivate(200, 20_000).expect("copied again");
+    store.set_label(296, Some("named"), 20_001).expect("named");
+    let next = open(store.clone(), 21_000);
+    next.load_more();
+    rows.replace_from(&next);
+    assert_eq!(*rows.rows.borrow(), *next.rows.borrow());
+    assert_eq!(rows.row_data(0).expect("the latest card").id, 200);
+    assert_eq!(rows.load_more(), 60);
+    let actual: Vec<i64> = rows.rows.borrow().iter().map(|row| row.id).collect();
+    let expected: Vec<i64> = store
+        .list(&Filter::default(), 400, None)
+        .expect("the history")
+        .rows
+        .into_iter()
+        .map(|row| row.id)
+        .collect();
+    assert_eq!(actual, expected);
+    assert_eq!(rows.load_more(), 0);
+    assert_eq!(
+        rows.rows
+            .borrow()
+            .iter()
+            .find(|row| row.id == 296)
+            .expect("the named row")
+            .label
+            .as_deref(),
+        Some("named")
+    );
+}
+
+#[test]
+fn replacement_uses_the_new_time_window_for_the_remaining_pages() {
+    let store = store_with(300);
+    let old = Filter {
+        since: Some(0),
+        ..Default::default()
+    };
+    let new = Filter {
+        since: Some(100),
+        ..Default::default()
+    };
+    let rows = Rows::open(store.clone(), old, 300, SIZES, None);
+    let next = Rows::open(store, new, 480, SIZES, None);
+    rows.replace_from(&next);
+    assert_eq!(rows.loaded(), 120);
+    assert_eq!(rows.load_more(), 80);
+    assert_eq!(rows.loaded(), 200);
+    assert!(rows.rows.borrow().iter().all(|row| row.modified_at >= 100));
+}

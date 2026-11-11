@@ -1,4 +1,4 @@
-use cp_core::item::{Item, Payload, SYNTHETIC_IMAGE, SYNTHETIC_TEXT};
+use cp_core::item::{Item, Payload, SYNTHETIC_IMAGE, SYNTHETIC_JPEG, SYNTHETIC_TEXT};
 use cp_core::paste_as::Content;
 use cp_win_sys::writing::text_of;
 use std::borrow::Cow;
@@ -19,7 +19,10 @@ pub fn content_of<'a>(item: &'a Item, ocr: Option<&'a str>) -> Content<'a> {
             .and_then(text_of)
             .map(Cow::Owned)
             .or_else(|| utf8(SYNTHETIC_TEXT).map(Cow::Borrowed)),
-        image: bytes("PNG").or_else(|| bytes(SYNTHETIC_IMAGE)),
+        image: bytes("PNG")
+            .or_else(|| bytes(SYNTHETIC_IMAGE))
+            .or_else(|| bytes("JFIF"))
+            .or_else(|| bytes(SYNTHETIC_JPEG)),
         paths: bytes("CF_HDROP").map(paths_in).unwrap_or_default(),
         ocr,
     }

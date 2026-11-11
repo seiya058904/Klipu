@@ -36,7 +36,7 @@ pub fn trouble<R: Runtime>(app: &AppHandle<R>) -> Option<Reason> {
         .and_then(|state| state.0.lock().ok().and_then(|held| *held))
 }
 
-fn heard_from_panel<R: Runtime>(app: &AppHandle<R>, said: &str) {
+fn heard_from_panel<R: Runtime>(app: &AppHandle<R>, panel: u32, said: &str) {
     if said == "settings" {
         crate::tray::surface_at(app, Some("keys"));
         return;
@@ -51,8 +51,19 @@ fn heard_from_panel<R: Runtime>(app: &AppHandle<R>, said: &str) {
         let _ = app.emit("panel-shown", ());
         return;
     }
-    if said.split_whitespace().next() == Some("emptied") {
-        let _ = app.emit("emptied", ());
+    if let Some((ticket, outcome)) = crate::emptying::answer(said) {
+        let accepted = app
+            .try_state::<crate::emptying::Pending>()
+            .is_some_and(|pending| pending.finish(panel, ticket, outcome));
+        if accepted {
+            if let Ok(gone) = outcome {
+                settled(app, Reason::Unemptied);
+                let _ = app.emit("emptied", gone);
+            } else {
+                trouble_is(app, Reason::Unemptied);
+                let _ = app.emit("empty-failed", ());
+            }
+        }
         return;
     }
     let Some(what) = said.strip_prefix("trouble ") else {
@@ -88,6 +99,7 @@ pub fn raise<R: Runtime>(app: &AppHandle<R>) {
     app.manage(Trouble::default());
     app.manage(Relights::default());
     app.manage(Parting::default());
+    app.manage(crate::emptying::Pending::default());
     match light(app) {
         Ok(()) => crate::note::note("the panel waits in the background"),
         Err(why) => crate::note::note(&format!("the panel did not start: {why}")),
@@ -295,13 +307,35 @@ pub fn hide<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-pub fn empty<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
-    say(app, "empty").map_err(|said| {
-        if let Said::Broken = said {
-            bring_back(app);
+pub fn empty<R: Runtime>(app: &AppHandle<R>) -> Result<i64, String> {
+    let crossing = app.state::<crate::backup::Crossing>();
+    let exclusive = crossing.claim().ok_or(crate::emptying::BUSY)?;
+    let pending = app.state::<crate::emptying::Pending>();
+    let sidecar = app.state::<Sidecar>();
+    let mut held = sidecar.0.lock().map_err(|_| crate::emptying::STOPPED)?;
+    let child = held.as_mut().ok_or(crate::emptying::STOPPED)?;
+    let panel = child.pid();
+    let (ticket, reply) = pending.begin(panel, exclusive)?;
+    if child.write(format!("empty {ticket}\n").as_bytes()).is_err() {
+        pending.stopped(panel);
+        if let Some(child) = held.take() {
+            let _ = child.kill();
         }
-        "the panel is not listening".to_owned()
-    })
+        drop(held);
+        bring_back(app);
+        return Err(crate::emptying::STOPPED.to_owned());
+    }
+    drop(held);
+    reply
+        .recv_timeout(crate::emptying::WAIT)
+        .map_err(|why| match why {
+            std::sync::mpsc::RecvTimeoutError::Timeout => {
+                pending.timed_out(panel, ticket);
+                crate::emptying::TIMEOUT
+            }
+            std::sync::mpsc::RecvTimeoutError::Disconnected => crate::emptying::STOPPED,
+        })?
+        .map_err(str::to_owned)
 }
 
 const GOES_IN: std::time::Duration = std::time::Duration::from_millis(2_500);
@@ -324,6 +358,7 @@ pub fn quit<R: Runtime>(app: &AppHandle<R>) {
         && let Some(child) = held.take()
     {
         crate::note::note("the panel would not leave on its own and had to be closed");
+        emptying_stopped(app, child.pid());
         let _ = child.kill();
     }
 }
@@ -351,6 +386,7 @@ fn light<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri_plugin_shell::Error
         && let Ok(mut held) = state.0.lock()
         && let Some(old) = held.replace(child)
     {
+        emptying_stopped(app, old.pid());
         let _ = old.kill();
     }
     all_is_well(app);
@@ -359,7 +395,7 @@ fn light<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri_plugin_shell::Error
         while let Some(event) = heard.recv().await {
             match event {
                 CommandEvent::Stdout(line) => {
-                    heard_from_panel(&handle, String::from_utf8_lossy(&line).trim());
+                    heard_from_panel(&handle, whose, String::from_utf8_lossy(&line).trim());
                 }
                 CommandEvent::Stderr(line) => {
                     for said in String::from_utf8_lossy(&line).lines() {
@@ -370,6 +406,7 @@ fn light<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri_plugin_shell::Error
                     }
                 }
                 CommandEvent::Terminated(how) => {
+                    emptying_stopped(&handle, whose);
                     let leaving = parting(&handle);
                     let ours = forget(&handle, whose);
                     if ours && !leaving {
@@ -401,11 +438,18 @@ fn say<R: Runtime>(app: &AppHandle<R>, what: &str) -> Result<(), Said> {
     if child.write(format!("{what}\n").as_bytes()).is_err() {
         if let Some(child) = held.take() {
             crate::note::note("the panel stopped listening, so it was closed");
+            emptying_stopped(app, child.pid());
             let _ = child.kill();
         }
         return Err(Said::Broken);
     }
     Ok(())
+}
+
+fn emptying_stopped<R: Runtime>(app: &AppHandle<R>, panel: u32) {
+    if let Some(pending) = app.try_state::<crate::emptying::Pending>() {
+        pending.stopped(panel);
+    }
 }
 
 fn forget<R: Runtime>(app: &AppHandle<R>, whose: u32) -> bool {

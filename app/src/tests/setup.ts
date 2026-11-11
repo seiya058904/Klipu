@@ -72,7 +72,7 @@ vi.mock("@tauri-apps/api/core", () => ({
       });
     }
     if (what === "relabel") return Promise.resolve(null);
-    if (what === "empty") return Promise.resolve(null);
+    if (what === "empty") return Promise.resolve(3);
     if (what === "trouble") return Promise.resolve(null);
     if (what === "keys") {
       const role = (args as { role?: string } | undefined)?.role ?? "panel";
@@ -98,8 +98,29 @@ vi.mock("@tauri-apps/api/core", () => ({
     if (what === "spare") {
       return Promise.resolve(["Ctrl+Alt+J", "Ctrl+Alt+Shift+V"]);
     }
+    if (what === "peek_backup") {
+      return Promise.resolve({
+        token: "backup-1",
+        name: "Klipu.klipubak",
+        added: 2,
+        already: 1,
+        refused: 0,
+        partial: 0,
+        repaired: 0,
+        expires: 0,
+        bytesAfter: 2048,
+        quota: null,
+        keepFor: null,
+        fromElsewhere: false,
+      });
+    }
+    if (what === "cancel_backup") return Promise.resolve();
+    if (what === "repair_search") return Promise.resolve(0);
     if (what === "load_backup") {
-      return Promise.resolve({ added: 2, already: 1 });
+      return Promise.resolve({
+        kind: "done",
+        result: { added: 2, already: 1, refused: 0, partial: 0, repaired: 0, fromElsewhere: false },
+      });
     }
     if (what === "open_web") {
       return Promise.resolve();

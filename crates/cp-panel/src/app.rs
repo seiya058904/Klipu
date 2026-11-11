@@ -40,6 +40,7 @@ struct State {
     query: String,
     tags: Vec<String>,
     pinned: bool,
+    shown: Option<Search>,
     rows: Option<Rc<Rows>>,
     options: Options,
     metrics: Metrics,
@@ -57,6 +58,23 @@ struct Request {
     base: Filter,
     full: Filter,
     keys: Vec<String>,
+}
+
+#[derive(PartialEq, Eq)]
+struct Search {
+    query: String,
+    tags: Vec<String>,
+    pinned: bool,
+}
+
+impl Search {
+    fn of(state: &State) -> Self {
+        Self {
+            query: state.query.clone(),
+            tags: state.tags.clone(),
+            pinned: state.pinned,
+        }
+    }
 }
 
 impl App {
@@ -83,6 +101,7 @@ impl App {
             query: String::new(),
             tags: Vec::new(),
             pinned: false,
+            shown: None,
             rows: None,
             options,
             metrics,
@@ -263,6 +282,7 @@ impl App {
                     }
                 }
                 state.query = rest.clone();
+                state.generation.fetch_add(1, Ordering::SeqCst);
             }
             if let Some(ui) = ui.upgrade() {
                 if rest != query.as_str() {
@@ -278,6 +298,14 @@ impl App {
                             refresh(&ui, &state);
                         }
                     });
+            }
+        });
+        let ui = self.ui.clone();
+        let state = self.state.clone();
+        panel.on_commit_search(move || {
+            let pending = state.borrow().typing.running();
+            if pending && let Some(ui) = ui.upgrade() {
+                refresh(&ui, &state);
             }
         });
         let ui = self.ui.clone();
@@ -422,20 +450,19 @@ impl App {
             let Some(ui) = ui.upgrade() else {
                 return;
             };
+            ui.set_reveal_selection(true);
             let state = state.borrow();
             let Some(rows) = state.rows.as_ref() else {
                 return;
             };
             rows.open_at(ui.get_opened().then_some(index as usize));
-            let Some((top, span)) = rows.span_of(index as usize) else {
+            let Some((top, span)) = span_of(&ui, rows, index as usize) else {
                 return;
             };
-            ui.set_scroll_y(reveal(
-                top,
-                span,
-                ui.get_scroll_y(),
-                ui.get_viewport_height(),
-            ));
+            set_scroll(
+                &ui,
+                reveal(top, span, scroll_of(&ui), ui.get_viewport_height()),
+            );
         });
         let ui = self.ui.clone();
         let state = self.state.clone();
@@ -487,17 +514,17 @@ impl App {
         });
         let ui = self.ui.clone();
         let state = self.state.clone();
-        panel.on_emptied(move || {
+        panel.on_emptied(move |ticket| {
             let store = state.borrow().store.clone();
             match store.clear_all_unpinned(now_ms()) {
                 Ok(gone) => {
                     note(&format!("{gone} unpinned items were emptied out"));
-                    crate::note::tell(&format!("emptied {gone}"));
+                    crate::note::tell(&format!("emptied {ticket} {gone}"));
                 }
-                Err(why) => crate::note::trouble(
-                    cp_core::trouble::Trouble::Unemptied,
-                    &format!("the history could not be emptied: {why}"),
-                ),
+                Err(why) => {
+                    note(&format!("the history could not be emptied: {why}"));
+                    crate::note::tell(&format!("empty-failed {ticket}"));
+                }
             }
             if let Some(ui) = ui.upgrade() {
                 refresh(&ui, &state);
@@ -693,42 +720,215 @@ fn following(ui: &Panel, state: &Rc<RefCell<State>>, id: i64) {
 }
 
 fn keeping_place(ui: &Panel, state: &Rc<RefCell<State>>) {
-    let was = ui.get_current();
-    refresh(ui, state);
-    let rows = state.borrow().rows.as_ref().map_or(0, |rows| rows.loaded());
-    if rows == 0 || was <= 0 {
-        return;
-    }
-    let back = was.min(rows as i32 - 1);
-    ui.set_current(back);
-    ui.invoke_moved(back);
+    begin_refresh(ui, state, true);
 }
 
 fn refresh(ui: &Panel, state: &Rc<RefCell<State>>) {
+    begin_refresh(ui, state, false);
+}
+
+fn scroll_of(ui: &Panel) -> f32 {
+    if ui.get_layout() == "image" {
+        ui.get_grid_scroll_y()
+    } else {
+        ui.get_scroll_y()
+    }
+}
+
+fn set_scroll(ui: &Panel, scroll: f32) {
+    if ui.get_layout() == "image" {
+        ui.set_grid_scroll_y(scroll);
+    } else {
+        ui.set_scroll_y(scroll);
+    }
+}
+
+fn span_of(ui: &Panel, rows: &Rows, index: usize) -> Option<(f32, f32)> {
+    if ui.get_layout() == "image" {
+        let height = ui.global::<crate::Theme>().get_cell();
+        rows.id_at(index)
+            .map(|_| ((index / 2) as f32 * height, height))
+    } else {
+        rows.span_of(index)
+    }
+}
+
+struct Place {
+    selected: Option<i64>,
+    index: usize,
+    loaded: usize,
+    opened: bool,
+    anchor: Option<(i64, f32)>,
+}
+
+impl Place {
+    fn capture(ui: &Panel, rows: &Rows) -> Self {
+        let scroll = scroll_of(ui);
+        let index = ui.get_current().max(0) as usize;
+        let top = if ui.get_layout() == "image" {
+            Some((-scroll / ui.global::<crate::Theme>().get_cell()).floor() as usize * 2)
+        } else {
+            rows.index_at(-scroll)
+        };
+        let visible = i64::from(ui.get_viewport_first_id());
+        let anchor = if rows.index_of(visible).is_some() {
+            Some((visible, ui.get_viewport_first_offset()))
+        } else {
+            top.and_then(|top| Some((rows.id_at(top)?, span_of(ui, rows, top)?.0 + scroll)))
+        };
+        Self {
+            selected: (ui.get_current() >= 0).then(|| rows.id_at(index)).flatten(),
+            index,
+            loaded: rows.loaded(),
+            opened: ui.get_opened(),
+            anchor,
+        }
+    }
+
+    fn restore(self, ui: &Panel, rows: &Rows) {
+        if rows.loaded() == 0 {
+            ui.set_current(-1);
+            ui.set_opened(false);
+            set_scroll(ui, 0.0);
+            return;
+        }
+        let retained = self.selected.and_then(|id| rows.index_of(id));
+        let selected = retained.unwrap_or_else(|| self.index.min(rows.loaded() - 1));
+        let opened = self.opened && retained.is_some();
+        rows.open_at(opened.then_some(selected));
+        ui.set_current(selected as i32);
+        ui.set_opened(opened);
+        if ui.get_layout() == "image"
+            && let Some(scroll) = self
+                .anchor
+                .and_then(|(id, offset)| Some(offset - span_of(ui, rows, rows.index_of(id)?)?.0))
+        {
+            set_scroll(ui, scroll.min(0.0));
+        }
+    }
+}
+
+struct Refresh {
+    rows: Rc<Rows>,
+    request: Request,
+    started: Instant,
+    keep: bool,
+    matching: std::collections::HashMap<i64, bool>,
+}
+
+fn begin_refresh(ui: &Panel, state: &Rc<RefCell<State>>, keep: bool) {
     let started = Instant::now();
     let now = now_ms();
-    let (store, filter, base, metrics) = {
+    let (store, filter, base, metrics, keys, generation, keep) = {
         let state = state.borrow();
+        state.typing.stop();
+        state.pointing.stop();
+        let filter = filter_of(&state);
+        let search = Search::of(&state);
+        let keep = keep && state.shown.as_ref() == Some(&search);
         (
             state.store.clone(),
-            filter_of(&state),
+            filter,
             base_filter_of(&state),
             state.metrics,
+            state.tags.clone(),
+            state.generation.fetch_add(1, Ordering::SeqCst) + 1,
+            keep,
         )
     };
-    let full = filter.clone();
-    let layout = crate::layout::layout_for(&filter.kinds);
-    ui.set_layout(layout.as_str().into());
-    let mut kinds = filter.kinds.clone();
-    kinds.dedup();
-    ui.set_one_kind(kinds.len() == 1);
+    ui.invoke_results_changed();
     let rows = Rows::open(
         store,
-        filter,
+        filter.clone(),
         now,
         metrics,
         Some(crate::model::by_the_quarter(here::utc_offset_at)),
     );
+    advance_refresh(
+        ui,
+        state,
+        Refresh {
+            rows,
+            request: Request {
+                generation,
+                base,
+                full: filter,
+                keys,
+            },
+            started,
+            keep,
+            matching: Default::default(),
+        },
+    );
+}
+
+fn advance_refresh(ui: &Panel, state: &Rc<RefCell<State>>, mut next: Refresh) {
+    if next.request.generation != state.borrow().generation.load(Ordering::SeqCst) {
+        return;
+    }
+    let place = next
+        .keep
+        .then(|| {
+            state
+                .borrow()
+                .rows
+                .as_ref()
+                .map(|rows| Place::capture(ui, rows))
+        })
+        .flatten();
+    if let Some(place) = &place {
+        let mut needs_more = next.rows.loaded() < place.loaded;
+        for id in [place.selected, place.anchor.map(|(id, _)| id)]
+            .into_iter()
+            .flatten()
+        {
+            if next.rows.index_of(id).is_some() {
+                continue;
+            }
+            let matches = *next.matching.entry(id).or_insert_with(|| {
+                state
+                    .borrow()
+                    .store
+                    .matches(&next.request.full, id)
+                    .unwrap_or_else(|why| {
+                        note(&format!(
+                            "whether {id} still matches could not be read: {why}"
+                        ));
+                        false
+                    })
+            });
+            needs_more |= matches;
+        }
+        if needs_more && next.rows.load_more() > 0 {
+            let later = ui.as_weak();
+            let mine = Rc::downgrade(state);
+            slint::Timer::single_shot(Duration::from_millis(1), move || {
+                if let (Some(ui), Some(state)) = (later.upgrade(), mine.upgrade()) {
+                    advance_refresh(&ui, &state, next);
+                }
+            });
+            return;
+        }
+    }
+    finish_refresh(ui, state, next, place);
+}
+
+fn finish_refresh(ui: &Panel, state: &Rc<RefCell<State>>, next: Refresh, place: Option<Place>) {
+    let rows = if place.is_some() {
+        let rows = state.borrow().rows.clone().expect("the list being kept");
+        rows.replace_from(&next.rows);
+        rows
+    } else {
+        next.rows
+    };
+    let layout = crate::layout::layout_for(&next.request.full.kinds);
+    ui.set_layout(layout.as_str().into());
+    let mut kinds = next.request.full.kinds.clone();
+    kinds.dedup();
+    ui.set_one_kind(kinds.len() == 1);
+    state.borrow().pointing.stop();
+    ui.set_reveal_selection(place.is_none());
+    ui.invoke_results_changed();
     ui.set_opened(false);
     {
         let state = state.borrow();
@@ -745,21 +945,20 @@ fn refresh(ui: &Panel, state: &Rc<RefCell<State>>) {
         ui.set_empty_title(title.into());
         ui.set_empty_hint(hint.into());
     }
-    ui.set_current(if rows.loaded() > 0 { 0 } else { -1 });
-    ui.set_scroll_y(0.0);
-    ui.set_cards(ModelRc::from(rows.clone()));
-    ui.set_grid_lines(ModelRc::from(crate::paired::Paired::over(rows.clone())));
+    if let Some(place) = place {
+        place.restore(ui, &rows);
+    } else {
+        ui.set_current(if rows.loaded() > 0 { 0 } else { -1 });
+        ui.set_scroll_y(0.0);
+        ui.set_cards(ModelRc::from(rows.clone()));
+        ui.set_grid_lines(ModelRc::from(crate::paired::Paired::over(rows.clone())));
+        ui.set_grid_scroll_y(0.0);
+    }
     let mut state = state.borrow_mut();
-    let keys = state.tags.clone();
     state.rows = Some(rows);
-    state.last_refresh = started.elapsed();
-    let generation = state.generation.fetch_add(1, Ordering::SeqCst) + 1;
-    let _ = state.counter.send(Request {
-        generation,
-        base,
-        full,
-        keys,
-    });
+    state.shown = Some(Search::of(&state));
+    state.last_refresh = next.started.elapsed();
+    let _ = state.counter.send(next.request);
     if state.options.measure {
         eprintln!(
             "refresh «{}»: list {:.1} ms",
@@ -1040,3 +1239,7 @@ fn watch_leaving(ui: &Panel, state: &Rc<RefCell<State>>) {
             }
         });
 }
+
+#[cfg(test)]
+#[path = "app_test.rs"]
+mod tests;

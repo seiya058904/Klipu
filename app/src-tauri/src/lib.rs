@@ -1,4 +1,5 @@
 mod backup;
+mod emptying;
 mod keys;
 mod links;
 mod looks;
@@ -38,6 +39,8 @@ pub fn run() {
             backup::save_backup,
             backup::peek_backup,
             backup::load_backup,
+            backup::cancel_backup,
+            backup::repair_search,
             report::save_report,
             report::open_log,
             empty,
@@ -82,8 +85,8 @@ pub fn run() {
     });
 }
 
-#[tauri::command]
-fn empty(app: tauri::AppHandle) -> Result<(), String> {
+#[tauri::command(async)]
+fn empty(app: tauri::AppHandle) -> Result<i64, String> {
     panel::empty(&app)
 }
 

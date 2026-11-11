@@ -259,9 +259,10 @@ describe("the window", () => {
     render(<App />);
     await userEvent.click(await screen.findByRole("button", { name: "备份" }));
     await userEvent.click(await screen.findByRole("button", { name: "选择文件…" }));
+    await userEvent.click(await screen.findByRole("button", { name: "按当前设置导入" }));
     expect(invoke).toHaveBeenCalledWith(
       "load_backup",
-      expect.objectContaining({ path: "/donde/quiera/Klipu.klipubak" }),
+      expect.objectContaining({ token: "backup-1" }),
     );
     expect(await screen.findByText("已导入 2 项 · 1 项已存在，未重复添加")).toBeDefined();
   });

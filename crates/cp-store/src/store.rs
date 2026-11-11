@@ -981,6 +981,23 @@ impl Store {
             })?)
     }
 
+    pub fn matches(&self, filter: &Filter, id: i64) -> Result<bool> {
+        let Some(terms) = terms_for(&self.db, filter)? else {
+            return Ok(false);
+        };
+        let Some(mut clauses) = Clauses::of(filter, &terms, true, true) else {
+            return Ok(false);
+        };
+        clauses.conditions.push("items.id = ?".into());
+        clauses.bound.push(Box::new(id));
+        let sql = format!("SELECT EXISTS (SELECT 1 {})", clauses.source());
+        Ok(self
+            .db
+            .query_row(&sql, params_from_iter(clauses.bound.iter()), |row| {
+                row.get(0)
+            })?)
+    }
+
     pub fn list(&self, filter: &Filter, limit: usize, after: Option<Cursor>) -> Result<Page> {
         let Some(terms) = terms_for(&self.db, filter)? else {
             return Ok(Page::default());
@@ -1410,6 +1427,9 @@ fn search(store: &Store, query: &str) -> Vec<String> {
 
 #[path = "store_housekeeping.rs"]
 mod upkeep;
+
+#[path = "store_text.rs"]
+mod text;
 
 pub use upkeep::{A_DAY, Policy, Swept};
 

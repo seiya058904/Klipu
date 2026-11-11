@@ -17,6 +17,30 @@ fn nothing_to_write_reserves_nothing() {
 }
 
 #[test]
+fn presence_markers_survive_native_memory_reservation() {
+    let marker = [0u8];
+    let names = ["Klipu Worn", "ExcludeClipboardContentFromMonitorProcessing"];
+    let entries: Vec<(u32, &[u8])> = names
+        .iter()
+        .map(|name| {
+            (
+                crate::formats::id_of(name).expect("registered"),
+                marker.as_slice(),
+            )
+        })
+        .collect();
+    let ready = reserved(&entries).expect("native memory was reserved");
+    assert_eq!(ready.len(), entries.len());
+    for ((expected, bytes), (id, block)) in entries.iter().zip(&ready) {
+        assert_eq!(id, expected);
+        let allocated = crate::clipboard::global_bytes(*block, usize::MAX)
+            .expect("the native marker can be locked and read");
+        assert!(allocated.starts_with(bytes));
+    }
+    release(&ready);
+}
+
+#[test]
 fn text_survives_the_round_trip() {
     for original in ["hola", "", "accents: ñáéíóú", "emoji: 🦀", "日本語"] {
         let bytes = utf16_of(original);

@@ -107,7 +107,7 @@ describe("the space of the history in Settings", () => {
     expect(await screen.findByText("历史记录已占用 4 GB，上限 5 GB")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "清空" }));
     await userEvent.click(screen.getByRole("button", { name: "确定吗？" }));
-    expect(await screen.findByText("已清空历史记录")).toBeInTheDocument();
+    expect(await screen.findByText("已删除 3 项，置顶内容已保留")).toBeInTheDocument();
     expect(screen.getByText("历史记录已占用 4 GB，上限 5 GB")).toBeInTheDocument();
     asked.usedBytes = 0;
     const emptied = await heardOn("emptied");

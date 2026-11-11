@@ -132,6 +132,11 @@ fn serve(
 const CATCH_UP: usize = 500;
 
 fn catch_up(store: &Store) {
+    if let Err(why) = store.catch_up_jpeg() {
+        note(&format!(
+            "JPEG images could not be queued for enrichment: {why}"
+        ));
+    }
     for (kinds, key, job) in [
         (&["image"][..], crate::media::WIDTH, "thumb"),
         (&["video", "audio"][..], crate::media::DURATION, "media"),

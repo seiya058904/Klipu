@@ -49,14 +49,26 @@ export component Panel inherits Window {
     in-out property <length> rest-x: -1px;
     in-out property <length> rest-y: -1px;
     in-out property <bool> gliding: true;
+    in-out property <bool> reveal-selection: true;
     in-out property <float> shown: 1.0;
     in-out property <float> fade: 1.0;
     in-out property <length> scroll-y <=> list.content-y;
+    in-out property <length> grid-scroll-y <=> grid.content-y;
     in-out property <length> chips-scroll <=> strip.content-x;
-    out property <length> viewport-height: list.visible-height;
+    out property <length> viewport-height: root.layout == "image" ? grid.visible-height : list.visible-height;
+    out property <int> viewport-first-id: -1;
+    out property <length> viewport-first-offset;
     out property <length> list-top: list.absolute-position.y - panel.absolute-position.y;
 
     callback search(string);
+    callback commit-search();
+    callback results-changed();
+    results-changed => {
+        root.hovered = -1;
+        root.last-chosen = -1;
+        root.quiet = true;
+        root.rest-x = -1px;
+    }
     callback chip-chosen(string, bool);
     callback pin-filter();
     callback drop-tag(string);
@@ -70,7 +82,7 @@ export component Panel inherits Window {
         grid.content-y = 0px;
     }
     callback fresh-start();
-    callback emptied();
+    callback emptied(string);
     callback plain-asked();
     callback arrived();
     callback copied();
@@ -171,6 +183,9 @@ export component Panel inherits Window {
                                     if event.text == Key.F1 {
                                         root.ask-settings();
                                         return accept;
+                                    }
+                                    if event.text == Key.Return {
+                                        root.commit-search();
                                     }
                                     if event.text == Key.Return && root.hovered >= 0 {
                                         root.current = root.hovered;
@@ -431,6 +446,21 @@ export component Panel inherits Window {
                     visible: root.layout == "image";
                     height: root.layout == "image" ? parent.height : 0px;
                     for line[at] in root.grid-lines : HorizontalLayout {
+                        property <length> view-y: self.y + grid.content-y;
+                        property <bool> first-visible: grid.visible && self.view-y <= 0px && self.view-y + self.height > 0px;
+                        property <int> first-id: self.first-visible ? root.cards[line * 2].id : -1;
+                        changed first-id => {
+                            if self.first-id >= 0 {
+                                root.viewport-first-id = self.first-id;
+                                root.viewport-first-offset = self.view-y;
+                            }
+                        }
+                        changed view-y => {
+                            if self.first-visible {
+                                root.viewport-first-id = root.cards[line * 2].id;
+                                root.viewport-first-offset = self.view-y;
+                            }
+                        }
                         height: Theme.cell;
                         spacing: 8px;
                         padding-left: 10px;
@@ -472,9 +502,24 @@ export component Panel inherits Window {
                     vertical-scrollbar-policy: ScrollBarPolicy.always-off;
                     animate content-y { duration: root.gliding ? 110ms : 0ms; easing: ease-out; }
                     for card[index] in root.cards : Rectangle {
+                        property <length> view-y: self.y + list.content-y;
+                        property <bool> first-visible: list.visible && self.view-y <= 0px && self.view-y + self.height > 0px;
+                        property <int> first-id: self.first-visible ? card.id : -1;
+                        changed first-id => {
+                            if self.first-id >= 0 {
+                                root.viewport-first-id = self.first-id;
+                                root.viewport-first-offset = self.view-y;
+                            }
+                        }
+                        changed view-y => {
+                            if self.first-visible {
+                                root.viewport-first-id = card.id;
+                                root.viewport-first-offset = self.view-y;
+                            }
+                        }
                         property <bool> mine: index == root.current;
                         changed mine => {
-                            if (self.mine) {
+                            if (self.mine && root.reveal-selection) {
                                 if (self.y < -list.content-y) {
                                     list.content-y = min(0px, 8px - self.y);
                                 } else if (self.y + self.height > -list.content-y + list.visible-height) {

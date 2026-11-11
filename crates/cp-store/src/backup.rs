@@ -18,6 +18,8 @@ pub struct Brought {
     pub added: i64,
     pub already: i64,
     pub refused: i64,
+    pub partial: i64,
+    pub repaired: i64,
     pub blobs: i64,
     pub from_elsewhere: bool,
 }
@@ -95,7 +97,11 @@ fn written_at(store: &Store, to: &Path, at: i64) -> Result<Made> {
         }
     }
 
-    let items: i64 = copy.query_row("SELECT COUNT(*) FROM items", [], |row| row.get(0))?;
+    let items: i64 = copy.query_row(
+        "SELECT COUNT(*) FROM items WHERE deleted_at IS NULL",
+        [],
+        |row| row.get(0),
+    )?;
     for (key, value) in [
         ("format", FORMAT.to_string()),
         ("schema", crate::SCHEMA_VERSION.to_string()),
@@ -145,36 +151,132 @@ pub fn read(from: &Path) -> Result<Taken> {
     })
 }
 
-pub fn bring(from: &Path, into: &Store, at: i64, say: &dyn Fn(&str)) -> Result<Brought> {
-    let taken = read(from)?;
-    if taken.schema > crate::SCHEMA_VERSION {
-        return Err(Error::FromTheFuture {
-            found: taken.schema,
-            supported: crate::SCHEMA_VERSION,
-        });
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Preview {
+    pub added: i64,
+    pub already: i64,
+    pub refused: i64,
+    pub partial: i64,
+    pub repaired: i64,
+    pub expires: i64,
+    pub bytes_after: i64,
+    pub quota: Option<i64>,
+    pub keep_for: Option<i64>,
+    pub from_elsewhere: bool,
+}
+
+impl Preview {
+    pub fn needs_review_after(&self, previous: &Self) -> bool {
+        self.keep_for != previous.keep_for
+            || self.quota != previous.quota
+            || self.expires > previous.expires
+            || self.refused > previous.refused
+            || self.partial > previous.partial
+            || (self.quota.is_some_and(|quota| self.bytes_after > quota)
+                && !previous
+                    .quota
+                    .is_some_and(|quota| previous.bytes_after > quota))
     }
-    let opened = Opened::of(from)?;
-    let source = Store::open(&opened.db)?;
-    let mut brought = Brought {
-        added: 0,
-        already: 0,
-        refused: 0,
-        blobs: opened.blobs,
-        from_elsewhere: taken
-            .platform
-            .as_deref()
-            .is_some_and(|made| made != WHERE_IT_WAS_MADE),
-    };
-    let mut after = None;
-    loop {
-        let page = source.list(&everything(), Store::PAGE, after)?;
-        if page.rows.is_empty() {
-            break;
+}
+
+pub struct Prepared {
+    source: Store,
+    opened: Opened,
+}
+
+impl Prepared {
+    pub fn open(from: &Path) -> Result<Self> {
+        let opened = Opened::of(from)?;
+        if opened.taken.schema > crate::SCHEMA_VERSION {
+            return Err(Error::FromTheFuture {
+                found: opened.taken.schema,
+                supported: crate::SCHEMA_VERSION,
+            });
         }
-        for row in &page.rows {
-            match carry(&source, into, row, at) {
-                Ok(true) => brought.added += 1,
-                Ok(false) => brought.already += 1,
+        let source = Store::open(&opened.db)?;
+        Ok(Self { source, opened })
+    }
+
+    pub fn preview(&self, into: &Store, policy: &crate::Policy, at: i64) -> Result<Preview> {
+        let mut preview = Preview {
+            bytes_after: into.usage()?.bytes,
+            quota: policy.bytes_at_most,
+            keep_for: policy.keep_for,
+            from_elsewhere: self.is_from_elsewhere(),
+            ..Default::default()
+        };
+        let mut known = std::collections::HashSet::new();
+        let mut blobs = into
+            .raw()
+            .prepare("SELECT DISTINCT digest FROM item_formats WHERE digest IS NOT NULL")?
+            .query_map([], |row| row.get::<_, String>(0))?
+            .collect::<rusqlite::Result<std::collections::HashSet<_>>>()?;
+        self.each(&mut |row| {
+            let Some((item, _, partial)) = carried_item(&self.source, row)? else {
+                preview.refused += 1;
+                return Ok(());
+            };
+            if let Some(id) = into.find_by_hash(&item)? {
+                preview.already += 1;
+                if let Some(local) = into.item(id)? {
+                    preview.repaired += i64::from(into.search_needs_repair(id, &local)?);
+                }
+                return Ok(());
+            }
+            if !known.insert(item.fingerprint()) {
+                preview.already += 1;
+                return Ok(());
+            }
+            preview.added += 1;
+            preview.partial += i64::from(partial);
+            if !row.pinned
+                && policy.keep_for.is_some_and(|age| {
+                    row.modified_at.max(row.last_used_at.unwrap_or(0)) < at.saturating_sub(age)
+                })
+            {
+                preview.expires += 1;
+            }
+            for format in &item.formats {
+                match &format.payload {
+                    cp_core::item::Payload::Inline(bytes) => {
+                        preview.bytes_after = preview.bytes_after.saturating_add(bytes.len() as i64)
+                    }
+                    cp_core::item::Payload::Blob(bytes)
+                        if blobs.insert(blake3::hash(bytes).to_hex().to_string()) =>
+                    {
+                        preview.bytes_after =
+                            preview.bytes_after.saturating_add(bytes.len() as i64);
+                    }
+                    _ => {}
+                }
+            }
+            Ok(())
+        })?;
+        Ok(preview)
+    }
+
+    pub fn bring(&self, into: &Store, at: i64, say: &dyn Fn(&str)) -> Result<Brought> {
+        let mut brought = Brought {
+            added: 0,
+            already: 0,
+            refused: 0,
+            partial: 0,
+            repaired: 0,
+            blobs: self.opened.blobs,
+            from_elsewhere: self.is_from_elsewhere(),
+        };
+        self.each(&mut |row| {
+            match carry(&self.source, into, row, at) {
+                Ok(Carried::Added { partial }) => {
+                    brought.added += 1;
+                    brought.partial += i64::from(partial);
+                }
+                Ok(Carried::Already { repaired }) => {
+                    brought.already += 1;
+                    brought.repaired += i64::from(repaired);
+                }
+                Ok(Carried::Unreadable) => brought.refused += 1,
                 Err(why) => {
                     say(&format!(
                         "what was copied on {} could not be brought over: {why}",
@@ -183,24 +285,85 @@ pub fn bring(from: &Path, into: &Store, at: i64, say: &dyn Fn(&str)) -> Result<B
                     brought.refused += 1;
                 }
             }
-        }
-        after = page.next;
-        if after.is_none() {
-            break;
-        }
+            Ok(())
+        })?;
+        Ok(brought)
     }
-    Ok(brought)
+
+    fn is_from_elsewhere(&self) -> bool {
+        self.opened
+            .taken
+            .platform
+            .as_deref()
+            .is_some_and(|made| made != WHERE_IT_WAS_MADE)
+    }
+
+    fn each(&self, work: &mut impl FnMut(&crate::Listed) -> Result<()>) -> Result<()> {
+        let mut after = None;
+        loop {
+            let page = self.source.list(&everything(), Store::PAGE, after)?;
+            if page.rows.is_empty() {
+                break;
+            }
+            for row in &page.rows {
+                work(row)?;
+            }
+            after = page.next;
+            if after.is_none() {
+                break;
+            }
+        }
+        Ok(())
+    }
 }
 
-fn carry(source: &Store, into: &Store, row: &crate::Listed, at: i64) -> Result<bool> {
-    let Some(item) = source.item(row.id)? else {
-        return Ok(false);
+pub fn bring(from: &Path, into: &Store, at: i64, say: &dyn Fn(&str)) -> Result<Brought> {
+    Prepared::open(from)?.bring(into, at, say)
+}
+
+enum Carried {
+    Added { partial: bool },
+    Already { repaired: bool },
+    Unreadable,
+}
+
+fn carried_item(
+    source: &Store,
+    row: &crate::Listed,
+) -> Result<Option<(cp_core::item::Item, String, bool)>> {
+    let Some(mut item) = source.item(row.id)? else {
+        return Ok(None);
     };
-    if into.find_by_hash(&item)?.is_some() {
-        return Ok(false);
+    let preview = source.full_preview(row.id, &item)?;
+    if item.formats.is_empty() && !preview.is_empty() {
+        item.formats = cp_core::item::Item::plain(&preview).formats;
+        item.formats[0].payload = cp_core::item::Payload::stored(preview.as_bytes().to_vec());
     }
-    if !item.is_comparable() && taken(into, &named(source, row.id, at)) {
-        return Ok(false);
+    if !item.is_comparable() {
+        return Ok(None);
+    }
+    let partial = source.raw().query_row(
+        "SELECT COUNT(*) FROM item_formats WHERE item_id = ?1 AND digest IS NOT NULL",
+        [row.id],
+        |r| r.get::<_, i64>(0),
+    )? > item
+        .formats
+        .iter()
+        .filter(|f| matches!(f.payload, cp_core::item::Payload::Blob(_)))
+        .count() as i64;
+    Ok(Some((item, preview, partial)))
+}
+
+fn carry(source: &Store, into: &Store, row: &crate::Listed, at: i64) -> Result<Carried> {
+    let Some((item, preview, partial)) = carried_item(source, row)? else {
+        return Ok(Carried::Unreadable);
+    };
+    if let Some(id) = into.find_by_hash(&item)? {
+        let repaired = match into.item(id)? {
+            Some(local) => into.repair_item_search(id, &local)?,
+            None => false,
+        };
+        return Ok(Carried::Already { repaired });
     }
     let meta = source.all_meta(row.id)?;
     let nothing: &[&str] = &[];
@@ -221,7 +384,7 @@ fn carry(source: &Store, into: &Store, row: &crate::Listed, at: i64) -> Result<b
     let id = into.insert_full(
         &free_name(source, into, row.id, at),
         &item,
-        &row.preview,
+        &preview,
         row.created_at,
         &more,
     )?;
@@ -231,7 +394,7 @@ fn carry(source: &Store, into: &Store, row: &crate::Listed, at: i64) -> Result<b
     if let Some(text) = source.ocr_text(row.id)? {
         into.set_ocr_text(id, &text, at)?;
     }
-    Ok(true)
+    Ok(Carried::Added { partial })
 }
 
 fn free_name(source: &Store, into: &Store, id: i64, at: i64) -> String {
@@ -268,10 +431,12 @@ struct Opened {
     dir: std::path::PathBuf,
     db: std::path::PathBuf,
     blobs: i64,
+    taken: Taken,
 }
 
 impl Opened {
     fn of(from: &Path) -> Result<Self> {
+        let taken = read(from)?;
         let dir = std::env::temp_dir().join(format!(
             "cp-backup-{}-{}-{:x}",
             std::process::id(),
@@ -285,9 +450,11 @@ impl Opened {
         let mut opened = Self {
             db: dir.join("history.db"),
             blobs: 0,
+            taken,
             dir,
         };
         std::fs::copy(from, &opened.db).map_err(Error::Io)?;
+        opened.taken = read(&opened.db)?;
         let blobs = Blobs::at(&opened.dir.join("blobs"))?;
         let coming = Connection::open(&opened.db)?;
         let mut kept = 0;

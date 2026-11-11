@@ -2,7 +2,7 @@ import { listen } from "@tauri-apps/api/event";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useState } from "react";
 import { A_MEGABYTE, empty, type Kept, nearLimit, storageUsed, whereItLives } from "../core";
-import { fill, sized, t } from "../locales";
+import { fill, items, sized, t } from "../locales";
 import { Band, Line, wentWrong } from "./Bits";
 
 const KEPT = [7, 30, 90];
@@ -17,6 +17,7 @@ export default function History({
 }) {
   const [where, setWhere] = useState<string | null>(null);
   const [sure, setSure] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
   const [used, setUsed] = useState<number | null>(null);
   const days = kept["keeps-days"];
@@ -38,7 +39,16 @@ export default function History({
 
   useEffect(() => {
     weigh();
-    const heard = ["kept", "crossed", "emptied"].map((name) => listen(name, weigh));
+    const heard = ["kept", "crossed"].map((name) => listen(name, weigh));
+    heard.push(
+      listen<number>("emptied", (event) => {
+        if (typeof event.payload === "number") {
+          setSaid(fill("emptyGone", items(event.payload)));
+        }
+        weigh();
+      }),
+    );
+    heard.push(listen("empty-failed", () => setSaid(`${t("failedEmpty")} · ${t("inTheLog")}`)));
     return () => {
       for (const one of heard) void one.then((drop) => drop());
     };
@@ -115,22 +125,41 @@ export default function History({
         </button>
       </Line>
 
-      <Line says={t("empty")} why={said ?? t("emptyWhy")}>
+      <Line
+        says={t("empty")}
+        why={<span role="status">{busy ? t("emptyWorking") : (said ?? t("emptyWhy"))}</span>}
+      >
         <button
           type="button"
           className="grave"
+          disabled={busy}
           onClick={() => {
+            if (busy) return;
             if (!sure) {
+              setSaid(null);
               setSure(true);
               return;
             }
             setSure(false);
+            setBusy(true);
             empty()
-              .then(() => setSaid(t("emptyGone")))
-              .catch((why) => setSaid(wentWrong("failedEmpty", why)));
+              .then((gone) => {
+                setSaid(fill("emptyGone", items(gone)));
+                weigh();
+              })
+              .catch((why) => {
+                const reasons = {
+                  "empty-busy": "emptyBusy",
+                  "empty-stopped": "emptyStopped",
+                  "empty-timeout": "emptyUnknown",
+                } as const;
+                const key = reasons[String(why) as keyof typeof reasons];
+                setSaid(key ? t(key) : wentWrong("failedEmpty", why));
+              })
+              .finally(() => setBusy(false));
           }}
         >
-          {sure ? t("emptySure") : t("emptyDo")}
+          {busy ? t("emptyWorking") : sure ? t("emptySure") : t("emptyDo")}
         </button>
       </Line>
     </>

@@ -249,14 +249,18 @@ export function useTrouble() {
     };
     ask();
     const again = setInterval(ask, 5_000);
-    return () => clearInterval(again);
+    const changed = ["emptied", "empty-failed"].map((name) => listen(name, ask));
+    return () => {
+      clearInterval(again);
+      for (const heard of changed) void heard.then((drop) => drop());
+    };
   }, []);
 
   return said;
 }
 
-export function empty(): Promise<void> {
-  return invoke<void>("empty");
+export function empty(): Promise<number> {
+  return invoke<number>("empty");
 }
 
 export type Keys = { wanted: string; bound: boolean };

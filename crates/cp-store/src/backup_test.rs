@@ -4,6 +4,231 @@ fn quietly(_what: &str) {}
 use cp_core::item::{Format, Item, Payload, SYNTHETIC_IMAGE, SYNTHETIC_TEXT};
 use cp_core::kind::Kind;
 
+#[test]
+fn long_texts_keep_tail_search_and_complete_payloads_after_restoring() {
+    let (there, source) = somewhere("history.db");
+    let texts = [
+        format!("{} uniqueendingmarker", "prefix ".repeat(400)),
+        format!("{}中文尾部唯一词", "前文".repeat(25_000)),
+    ];
+    for (index, value) in texts.iter().enumerate() {
+        let item = Item {
+            kind: Some(Kind::Text),
+            formats: vec![Format {
+                id: SYNTHETIC_TEXT.into(),
+                payload: Payload::stored(value.as_bytes().to_vec()),
+            }],
+        };
+        source
+            .insert_item(&format!("long-{index}"), &item, value, 1000)
+            .unwrap();
+    }
+    let backup = there.path().join("long.cpbackup");
+    write(&source, &backup, 2000).unwrap();
+    let (_here, target) = somewhere("history.db");
+    assert_eq!(bring(&backup, &target, 3000, &quietly).unwrap().added, 2);
+    for (query, full) in ["uniqueendingmarker", "尾部唯一"].iter().zip(&texts) {
+        let rows = target
+            .list(
+                &crate::Filter {
+                    query: Some((*query).into()),
+                    ..Default::default()
+                },
+                100,
+                None,
+            )
+            .unwrap()
+            .rows;
+        assert_eq!(rows.len(), 1);
+        assert_eq!(
+            target
+                .payload_of(rows[0].id, SYNTHETIC_TEXT)
+                .unwrap()
+                .unwrap(),
+            full.as_bytes()
+        );
+        assert_eq!(rows[0].preview.chars().count(), crate::PREVIEW_CHARS);
+    }
+    assert_eq!(bring(&backup, &target, 4000, &quietly).unwrap().already, 2);
+}
+
+#[test]
+fn importing_again_repairs_old_truncated_indexes_and_keeps_local_labels() {
+    let (there, source) = somewhere("history.db");
+    let value = format!("{} 末尾标记", "前文".repeat(1500));
+    let item = text(&value);
+    source.insert_item("long", &item, &value, 1000).unwrap();
+    let backup = there.path().join("long.cpbackup");
+    write(&source, &backup, 2000).unwrap();
+    let (_here, target) = somewhere("history.db");
+    let id = target.insert_item("already", &item, "前文", 500).unwrap();
+    target.set_label(id, Some("本地名称"), 600).unwrap();
+    target.set_ocr_text(id, "本地识别", 700).unwrap();
+    let prepared = Prepared::open(&backup).unwrap();
+    assert_eq!(
+        prepared
+            .preview(&target, &crate::Policy::default(), 3000)
+            .unwrap()
+            .repaired,
+        1
+    );
+    let result = prepared.bring(&target, 3000, &quietly).unwrap();
+    assert_eq!((result.added, result.already, result.repaired), (0, 1, 1));
+    assert!(
+        target
+            .matches(
+                &crate::Filter {
+                    query: Some("尾标".into()),
+                    ..Default::default()
+                },
+                id
+            )
+            .unwrap()
+    );
+    assert_eq!(target.label_of(id).unwrap().as_deref(), Some("本地名称"));
+    assert_eq!(target.ocr_text(id).unwrap().as_deref(), Some("本地识别"));
+    assert_eq!(only_row(&target).created_at, 500);
+}
+
+#[test]
+fn an_incomplete_backup_distinguishes_partial_content_from_unrecoverable_items() {
+    let (there, source) = somewhere("history.db");
+    source.insert_item("image", &heavy(), "", 1000).unwrap();
+    let mut mixed = text("readable fallback");
+    mixed.formats.push(heavy().formats.remove(0));
+    source
+        .insert_item("mixed", &mixed, "readable fallback", 1001)
+        .unwrap();
+    let backup = there.path().join("missing.cpbackup");
+    write(&source, &backup, 2000).unwrap();
+    let copy = Connection::open(&backup).unwrap();
+    copy.execute("UPDATE backup_blobs SET bytes = X'01'", [])
+        .unwrap();
+    drop(copy);
+    let (_here, target) = somewhere("history.db");
+    let prepared = Prepared::open(&backup).unwrap();
+    let preview = prepared
+        .preview(&target, &crate::Policy::default(), 3000)
+        .unwrap();
+    assert_eq!((preview.added, preview.partial, preview.refused), (1, 1, 1));
+    let result = prepared.bring(&target, 3000, &quietly).unwrap();
+    assert_eq!((result.added, result.partial, result.refused), (1, 1, 1));
+    assert_eq!(
+        target
+            .payload_of(only_row(&target).id, SYNTHETIC_TEXT)
+            .unwrap()
+            .unwrap(),
+        b"readable fallback"
+    );
+}
+
+#[test]
+fn a_prepared_backup_is_the_reviewed_snapshot_even_if_the_file_changes() {
+    let (there, source) = somewhere("history.db");
+    source
+        .insert_item("original", &text("original"), "original", 1)
+        .unwrap();
+    let backup = there.path().join("snapshot.cpbackup");
+    write(&source, &backup, 2).unwrap();
+    let prepared = Prepared::open(&backup).unwrap();
+    source
+        .insert_item("later", &text("later"), "later", 3)
+        .unwrap();
+    write(&source, &backup, 4).unwrap();
+    let (_here, target) = somewhere("history.db");
+    assert_eq!(
+        prepared
+            .preview(&target, &crate::Policy::default(), 5)
+            .unwrap()
+            .added,
+        1
+    );
+    assert_eq!(prepared.bring(&target, 5, &quietly).unwrap().added, 1);
+    assert_eq!(only_row(&target).preview, "original");
+}
+
+#[test]
+fn the_preview_warns_before_age_and_quota_can_discard_imports() {
+    let (there, source) = somewhere("history.db");
+    source.insert_item("old", &text("old"), "old", 1).unwrap();
+    let pin = source.insert_item("pinned", &heavy(), "", 2).unwrap();
+    source.set_pinned(pin, true, 2).unwrap();
+    let deleted = source
+        .insert_item("deleted", &text("gone"), "gone", 3)
+        .unwrap();
+    source.mark_deleted(deleted, 4).unwrap();
+    let backup = there.path().join("old.cpbackup");
+    assert_eq!(write(&source, &backup, 5).unwrap().items, 2);
+    let (_here, target) = somewhere("history.db");
+    let prepared = Prepared::open(&backup).unwrap();
+    let policy = crate::Policy {
+        keep_for: Some(30 * crate::A_DAY),
+        bytes_at_most: Some(1),
+        ..Default::default()
+    };
+    let preview = prepared
+        .preview(&target, &policy, 40 * crate::A_DAY)
+        .unwrap();
+    assert_eq!((preview.added, preview.expires), (2, 1));
+    assert!(preview.bytes_after > preview.quota.unwrap());
+    assert_eq!(target.count().unwrap(), 0);
+    prepared
+        .bring(&target, 40 * crate::A_DAY, &quietly)
+        .unwrap();
+    assert_eq!(target.sweep(&policy, 40 * crate::A_DAY).unwrap().expired, 1);
+    assert_eq!(target.count().unwrap(), 1);
+    assert!(only_row(&target).pinned);
+}
+
+#[test]
+fn a_preview_only_needs_renewed_consent_when_the_risk_increases() {
+    let before = Preview {
+        bytes_after: 10,
+        quota: Some(100),
+        keep_for: Some(30),
+        ..Default::default()
+    };
+    assert!(
+        !Preview {
+            bytes_after: 20,
+            ..before
+        }
+        .needs_review_after(&before)
+    );
+    assert!(
+        Preview {
+            bytes_after: 101,
+            ..before
+        }
+        .needs_review_after(&before)
+    );
+    assert!(
+        Preview {
+            expires: 1,
+            ..before
+        }
+        .needs_review_after(&before)
+    );
+    assert!(
+        Preview {
+            keep_for: Some(7),
+            ..before
+        }
+        .needs_review_after(&before)
+    );
+    let warned = Preview {
+        bytes_after: 101,
+        ..before
+    };
+    assert!(
+        !Preview {
+            bytes_after: 102,
+            ..warned
+        }
+        .needs_review_after(&warned)
+    );
+}
+
 fn text(what: &str) -> Item {
     Item {
         kind: Some(Kind::Text),

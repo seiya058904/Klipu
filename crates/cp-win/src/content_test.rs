@@ -78,6 +78,60 @@ fn what_the_store_wrote_itself_is_read_back_the_same_way() {
     assert_eq!(content_of(&synthetic, None).image, Some(&[1u8, 2, 3][..]));
 }
 
+fn jpeg() -> Vec<u8> {
+    let pixels = image::RgbImage::from_pixel(16, 8, image::Rgb([180, 50, 20]));
+    let mut out = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(pixels)
+        .write_to(&mut out, image::ImageFormat::Jpeg)
+        .expect("encoded");
+    out.into_inner()
+}
+
+#[test]
+fn captured_and_legacy_jpegs_supply_their_original_bytes_to_image_features() {
+    let jpeg = jpeg();
+    for id in ["JFIF", SYNTHETIC_JPEG] {
+        let item = Item {
+            kind: Some(Kind::Image),
+            formats: vec![inline(id, &jpeg)],
+        };
+        let bytes = content_of(&item, None).image.expect("readable image");
+        assert_eq!(bytes, jpeg);
+        let thumb = cp_core::thumbnail::of_image(bytes, 8).expect("a thumbnail");
+        assert_eq!(
+            cp_core::thumbnail::size_of(&thumb),
+            Some(cp_core::thumbnail::Size {
+                width: 8,
+                height: 4
+            })
+        );
+        assert!(cp_core::dib::from_jpeg(bytes).is_some());
+    }
+}
+
+#[test]
+fn a_kept_png_still_wins_and_an_announced_png_does_not_hide_a_jpeg() {
+    let jpeg = jpeg();
+    let mut item = Item {
+        kind: Some(Kind::Image),
+        formats: vec![inline("JFIF", &jpeg), inline(SYNTHETIC_IMAGE, b"png")],
+    };
+    assert_eq!(content_of(&item, None).image, Some(b"png".as_slice()));
+    item.formats[1].payload = Payload::Announced { size: None };
+    assert_eq!(content_of(&item, None).image, Some(jpeg.as_slice()));
+}
+
+#[test]
+fn a_broken_jpeg_is_kept_for_restore_but_cannot_make_a_thumbnail() {
+    let item = Item {
+        kind: Some(Kind::Image),
+        formats: vec![inline("JFIF", b"not a jpeg")],
+    };
+    let bytes = content_of(&item, None).image.expect("the stored bytes");
+    assert_eq!(bytes, b"not a jpeg");
+    assert_eq!(cp_core::thumbnail::of_image(bytes, 8), None);
+}
+
 #[test]
 fn the_system_text_wins_over_the_synthetic_one() {
     let item = Item {

@@ -94,8 +94,8 @@ pub fn renew_in(cards: &slint::ModelRc<Card>, id: i64) -> bool {
 
 pub struct Rows {
     store: Rc<Store>,
-    filter: Filter,
-    now: i64,
+    filter: RefCell<Filter>,
+    now: Cell<i64>,
     metrics: Metrics,
     clock: Option<Clock>,
     rows: RefCell<Vec<Listed>>,
@@ -108,6 +108,7 @@ pub struct Rows {
     exhausted: Cell<bool>,
     loading: Cell<bool>,
     notify: ModelNotify,
+    grid_notify: ModelNotify,
     weak: RefCell<Weak<Rows>>,
 }
 
@@ -121,8 +122,8 @@ impl Rows {
     ) -> Rc<Self> {
         let rows = Rc::new(Self {
             store,
-            filter,
-            now,
+            filter: RefCell::new(filter),
+            now: Cell::new(now),
             metrics,
             clock,
             rows: RefCell::new(Vec::new()),
@@ -135,6 +136,7 @@ impl Rows {
             exhausted: Cell::new(false),
             loading: Cell::new(false),
             notify: ModelNotify::default(),
+            grid_notify: ModelNotify::default(),
             weak: RefCell::new(Weak::new()),
         });
         *rows.weak.borrow_mut() = Rc::downgrade(&rows);
@@ -143,17 +145,20 @@ impl Rows {
     }
 
     fn time_offset(&self) -> Option<&Clock> {
-        self.clock.as_ref().filter(|_| by_time(&self.filter))
+        self.clock
+            .as_ref()
+            .filter(|_| by_time(&self.filter.borrow()))
     }
 
     fn when(&self, row: &Listed, offset: &Clock) -> crate::age::When {
         let touched = crate::view::touched_of(row);
-        crate::age::when_of(self.now, touched, offset(self.now), offset(touched))
+        let now = self.now.get();
+        crate::age::when_of(now, touched, offset(now), offset(touched))
     }
 
     fn heads(&self, rows: &[Listed], index: usize) -> bool {
         let Some(offset) = self.time_offset() else {
-            return heads_group(&self.filter, rows, index);
+            return heads_group(&self.filter.borrow(), rows, index);
         };
         let Some(row) = rows.get(index) else {
             return false;
@@ -166,6 +171,84 @@ impl Rows {
 
     pub fn loaded(&self) -> usize {
         self.rows.borrow().len()
+    }
+
+    pub fn id_at(&self, index: usize) -> Option<i64> {
+        self.rows.borrow().get(index).map(|row| row.id)
+    }
+
+    pub fn index_at(&self, offset: f32) -> Option<usize> {
+        let count = self.loaded();
+        (count > 0).then(|| {
+            self.tops
+                .borrow()
+                .partition_point(|top| *top <= offset)
+                .saturating_sub(1)
+                .min(count - 1)
+        })
+    }
+
+    pub fn load_more(&self) -> usize {
+        self.load_page()
+    }
+
+    pub fn replace_from(&self, next: &Self) {
+        let wanted = next.rows.borrow().clone();
+        *self.filter.borrow_mut() = next.filter.borrow().clone();
+        self.now.set(next.now.get());
+        *self.meta.borrow_mut() = next.meta.borrow().clone();
+        self.open.set(None);
+        let kept: std::collections::HashSet<i64> = wanted.iter().map(|row| row.id).collect();
+        for index in (0..self.loaded()).rev() {
+            if self.id_at(index).is_some_and(|id| !kept.contains(&id)) {
+                self.rows.borrow_mut().remove(index);
+                self.reset_measures();
+                self.notify.row_removed(index, 1);
+            }
+        }
+        for (index, row) in wanted.iter().enumerate() {
+            if self.id_at(index) == Some(row.id) {
+                continue;
+            }
+            if let Some(was) = self.index_of(row.id) {
+                self.rows.borrow_mut().remove(was);
+                self.reset_measures();
+                self.notify.row_removed(was, 1);
+            }
+            self.rows.borrow_mut().insert(index, row.clone());
+            self.reset_measures();
+            self.notify.row_added(index, 1);
+        }
+        let removed = self.loaded().saturating_sub(wanted.len());
+        *self.rows.borrow_mut() = wanted;
+        self.reset_measures();
+        if removed > 0 {
+            self.notify.row_removed(self.loaded(), removed);
+        }
+        *self.next.borrow_mut() = next.next.borrow().clone();
+        self.exhausted.set(next.exhausted.get());
+        for index in 0..self.loaded() {
+            self.notify.row_changed(index);
+        }
+        self.grid_notify.reset();
+    }
+
+    pub fn grid_tracker(&self) -> &dyn ModelTracker {
+        &self.grid_notify
+    }
+
+    fn reset_measures(&self) {
+        *self.cards.borrow_mut() = vec![None; self.loaded()];
+        self.thumbless.borrow_mut().clear();
+        let rows = self.rows.borrow();
+        let mut tops = self.tops.borrow_mut();
+        tops.clear();
+        tops.push(0.0);
+        let mut at = 0.0;
+        for (index, row) in rows.iter().enumerate() {
+            at += self.height_at(index, row);
+            tops.push(at);
+        }
     }
 
     pub fn index_of(&self, id: i64) -> Option<usize> {
@@ -183,7 +266,7 @@ impl Rows {
                 return false;
             }
         };
-        let keys = meta_keys_for(&self.filter);
+        let keys = meta_keys_for(&self.filter.borrow());
         if !keys.is_empty() {
             match self.store.meta_for(&[id], keys) {
                 Ok(found) => self.meta.borrow_mut().extend(found),
@@ -204,6 +287,7 @@ impl Rows {
         };
         self.resize(index, height);
         self.notify.row_changed(index);
+        self.grid_notify.row_changed(index / crate::paired::ACROSS);
         true
     }
 
@@ -307,7 +391,7 @@ impl Rows {
         }
         let page = match self
             .store
-            .list(&self.filter, PAGE, self.next.borrow().clone())
+            .list(&self.filter.borrow(), PAGE, self.next.borrow().clone())
         {
             Ok(page) => page,
             Err(why) => {
@@ -323,7 +407,7 @@ impl Rows {
         *self.next.borrow_mut() = page.next;
         let start = self.rows.borrow().len();
         self.cards.borrow_mut().extend((0..added).map(|_| None));
-        let keys = meta_keys_for(&self.filter);
+        let keys = meta_keys_for(&self.filter.borrow());
         if !keys.is_empty() {
             let ids: Vec<i64> = page.rows.iter().map(|one| one.id).collect();
             match self.store.meta_for(&ids, keys) {
@@ -342,6 +426,14 @@ impl Rows {
             }
         }
         self.notify.row_added(start, added);
+        let line = crate::paired::lines_for(start);
+        let added_lines = crate::paired::lines_for(start + added) - line;
+        if added_lines > 0 {
+            self.grid_notify.row_added(line, added_lines);
+        }
+        if !start.is_multiple_of(crate::paired::ACROSS) {
+            self.grid_notify.row_changed(start / crate::paired::ACROSS);
+        }
         added
     }
 
@@ -376,19 +468,15 @@ impl Rows {
                 crate::view::face_for(row, false, self.metrics.shut_lines).shut_px()
             };
         let meta = self.meta.borrow();
-        let mut card = card_of(row, self.now, meta.get(&row.id), self.metrics.shut_lines);
+        let now = self.now.get();
+        let mut card = card_of(row, now, meta.get(&row.id), self.metrics.shut_lines);
         drop(meta);
         let english = crate::say::in_english();
         if let Some(offset) = self.time_offset() {
             let touched = crate::view::touched_of(row);
-            card.age = crate::age::age_in_group(
-                self.now,
-                touched,
-                offset(self.now),
-                offset(touched),
-                english,
-            )
-            .into();
+            card.age =
+                crate::age::age_in_group(now, touched, offset(now), offset(touched), english)
+                    .into();
             if heads {
                 card.heads_group = true;
                 card.group_said = crate::age::when_said(self.when(row, offset), english).into();
@@ -446,6 +534,7 @@ impl Model for Rows {
             *slot = Some(card);
         }
         self.notify.row_changed(index);
+        self.grid_notify.row_changed(index / crate::paired::ACROSS);
     }
 
     fn model_tracker(&self) -> &dyn ModelTracker {

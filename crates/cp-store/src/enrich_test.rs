@@ -26,6 +26,140 @@ fn group_of(store: &Store, id: i64) -> String {
         .expect("read")
 }
 
+fn old_image(store: &Store, at: i64, formats: &[&str]) -> i64 {
+    let item = Item {
+        kind: Some(Kind::Image),
+        formats: formats
+            .iter()
+            .map(|id| Format {
+                id: (*id).into(),
+                payload: Payload::Inline(vec![1, 2, 3]),
+            })
+            .collect(),
+    };
+    store
+        .insert_item(&format!("image-{at}"), &item, "", at)
+        .expect("stored")
+}
+
+#[test]
+fn old_jpeg_images_recover_missing_work_once_even_if_ocr_finds_nothing() {
+    let store = Store::in_memory().expect("schema");
+    let jfif = old_image(&store, 1, &["JFIF"]);
+    let legacy = old_image(&store, 2, &["image/jpeg"]);
+    assert_eq!(store.catch_up_jpeg().expect("caught up"), 2);
+    for job in ["thumb", "ocr"] {
+        assert_eq!(
+            store.take_pending(job, 100, 10).expect("queued"),
+            [legacy, jfif]
+        );
+        for id in [jfif, legacy] {
+            store.work_done(id, job).expect("finished without a result");
+        }
+    }
+    assert_eq!(store.catch_up_jpeg().expect("already considered"), 0);
+    for job in ["thumb", "ocr"] {
+        assert!(store.take_pending(job, 100, 10).expect("queue").is_empty());
+    }
+}
+
+#[test]
+fn jpeg_recovery_preserves_results_and_existing_retry_delays() {
+    let store = Store::in_memory().expect("schema");
+    let complete = old_image(&store, 1, &["JFIF"]);
+    store
+        .set_thumb(complete, Some("kept.png"), 2)
+        .expect("thumbnail");
+    store
+        .set_ocr_text(complete, "already read", 2)
+        .expect("OCR");
+    let delayed = old_image(&store, 3, &["image/jpeg"]);
+    store.enqueue(delayed, "ocr").expect("queued");
+    assert!(
+        store
+            .work_failed(delayed, "ocr", "try later", 1_000)
+            .expect("delayed")
+    );
+    assert_eq!(store.catch_up_jpeg().expect("caught up"), 2);
+    assert_eq!(
+        store.take_pending("thumb", 100, 10).expect("queue"),
+        [delayed]
+    );
+    assert!(
+        store
+            .take_pending("ocr", 100, 10)
+            .expect("queue")
+            .is_empty()
+    );
+    assert_eq!(
+        store.take_pending("ocr", 1_000, 10).expect("queue"),
+        [delayed]
+    );
+    assert_eq!(
+        store.thumb_path(complete).expect("thumb").as_deref(),
+        Some("kept.png")
+    );
+    assert_eq!(
+        store.ocr_text(complete).expect("OCR").as_deref(),
+        Some("already read")
+    );
+}
+
+#[test]
+fn jpeg_recovery_ignores_deleted_unreadable_and_already_png_images() {
+    let store = Store::in_memory().expect("schema");
+    old_image(&store, 1, &["JFIF", "PNG"]);
+    old_image(&store, 2, &["image/jpeg", "image/png"]);
+    old_image(&store, 3, &["PNG"]);
+    let deleted = old_image(&store, 4, &["JFIF"]);
+    store.mark_deleted(deleted, 5).expect("deleted");
+    let unreadable = old_image(&store, 6, &["JFIF"]);
+    store
+        .raw()
+        .execute(
+            "UPDATE item_formats SET inline_data = NULL WHERE item_id = ?1",
+            [unreadable],
+        )
+        .expect("unreadable");
+    assert_eq!(store.catch_up_jpeg().expect("nothing eligible"), 0);
+    assert!(
+        store
+            .take_pending("ocr", 100, 10)
+            .expect("queue")
+            .is_empty()
+    );
+    assert!(
+        store
+            .take_pending("thumb", 100, 10)
+            .expect("queue")
+            .is_empty()
+    );
+}
+
+#[test]
+fn jpeg_recovery_rolls_back_its_jobs_when_the_completion_marker_cannot_be_saved() {
+    let store = Store::in_memory().expect("schema");
+    let id = old_image(&store, 1, &["JFIF"]);
+    store
+        .raw()
+        .execute_batch(
+            "CREATE TRIGGER reject_jpeg_marker BEFORE INSERT ON item_meta
+         WHEN NEW.key = 'jpeg-enrichment-v1'
+         BEGIN SELECT RAISE(ABORT, 'disk full'); END;",
+        )
+        .expect("trigger");
+    assert!(store.catch_up_jpeg().is_err());
+    for job in ["thumb", "ocr"] {
+        assert!(store.take_pending(job, 100, 10).expect("queue").is_empty());
+    }
+    assert_eq!(store.meta(id, "jpeg-enrichment-v1").expect("marker"), None);
+    store
+        .raw()
+        .execute_batch("DROP TRIGGER reject_jpeg_marker")
+        .expect("writes restored");
+    assert_eq!(store.catch_up_jpeg().expect("retried"), 1);
+}
+
 #[test]
 fn what_has_no_group_yet_is_what_comes_back_to_be_grouped() {
     let store = Store::in_memory().expect("schema");
